@@ -1,0 +1,147 @@
+#include <math.h>
+
+#include "FastLED.h"
+
+#define NUM_LEDS		1
+#define NUM_LEDS_USED	1
+#define LED_PIN			5
+#define GAMMA			M_E
+
+// #define BAUD_RATE		9600
+#define BAUD_RATE		115200
+#define SHOULD_OUTPUT	true
+
+
+const uint8_t default_brightness = 60;
+volatile uint8_t encoder_position = default_brightness;
+uint8_t max_brightness = 10;
+
+struct CRGB leds[NUM_LEDS];
+
+const PROGMEM uint8_t gamma_correction_e[256] = {
+	  0,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
+	  1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
+	  1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,   2,   2,   2,   3,
+	  3,   3,   3,   3,   3,   4,   4,   4,   4,   4,   5,   5,   5,   5,   5,   6,
+	  6,   6,   6,   7,   7,   7,   8,   8,   8,   9,   9,   9,   9,  10,  10,  11,
+	 11,  11,  12,  12,  12,  13,  13,  14,  14,  15,  15,  15,  16,  16,  17,  17,
+	 18,  18,  19,  19,  20,  21,  21,  22,  22,  23,  23,  24,  25,  25,  26,  27,
+	 27,  28,  29,  29,  30,  31,  31,  32,  33,  34,  34,  35,  36,  37,  38,  38,
+	 39,  40,  41,  42,  43,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,  53,
+	 54,  55,  56,  57,  58,  59,  60,  61,  62,  64,  65,  66,  67,  68,  69,  71,
+	 72,  73,  74,  76,  77,  78,  79,  81,  82,  83,  85,  86,  87,  89,  90,  92,
+	 93,  95,  96,  97,  99, 100, 102, 103, 105, 107, 108, 110, 111, 113, 115, 116,
+	118, 120, 121, 123, 125, 126, 128, 130, 132, 134, 135, 137, 139, 141, 143, 145,
+	147, 148, 150, 152, 154, 156, 158, 160, 162, 164, 167, 169, 171, 173, 175, 177,
+	179, 181, 184, 186, 188, 190, 193, 195, 197, 200, 202, 204, 207, 209, 211, 214,
+	216, 219, 221, 224, 226, 229, 231, 234, 236, 239, 242, 244, 247, 250, 252, 255,
+};
+
+const PROGMEM uint8_t gamma_correction_3[256] = {
+	  0,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
+	  1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
+	  1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,
+	  2,   2,   2,   2,   2,   2,   2,   3,   3,   3,   3,   3,   3,   3,   4,   4,
+	  4,   4,   4,   5,   5,   5,   5,   6,   6,   6,   6,   6,   7,   7,   7,   8,
+	  8,   8,   8,   9,   9,   9,  10,  10,  10,  11,  11,  12,  12,  12,  13,  13,
+	 14,  14,  14,  15,  15,  16,  16,  17,  17,  18,  18,  19,  19,  20,  20,  21,
+	 22,  22,  23,  23,  24,  25,  25,  26,  27,  27,  28,  29,  29,  30,  31,  32,
+	 32,  33,  34,  35,  35,  36,  37,  38,  39,  40,  40,  41,  42,  43,  44,  45,
+	 46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  60,  61,  62,
+	 63,  64,  65,  67,  68,  69,  70,  72,  73,  74,  76,  77,  78,  80,  81,  82,
+	 84,  85,  87,  88,  90,  91,  93,  94,  96,  97,  99, 101, 102, 104, 105, 107,
+	109, 111, 112, 114, 116, 118, 119, 121, 123, 125, 127, 129, 131, 132, 134, 136,
+	138, 140, 142, 144, 147, 149, 151, 153, 155, 157, 159, 162, 164, 166, 168, 171,
+	173, 175, 178, 180, 182, 185, 187, 190, 192, 195, 197, 200, 202, 205, 207, 210,
+	213, 215, 218, 221, 223, 226, 229, 232, 235, 237, 240, 243, 246, 249, 252, 255,
+};
+
+uint8_t *default_gamma_correction = gamma_correction_e;
+
+// rotary encoder
+const uint8_t pin_clk = 2;   // Generating interrupts using CLK signal
+const uint8_t pin_dt = 3;    // Reading DT signal
+const uint8_t pin_sw = 4;    // Reading Push Button switch
+
+volatile int8_t direction = 0;
+volatile uint8_t last_state = 0;
+
+
+uint8_t gamma_correct(uint8_t brightness) {
+	return pgm_read_byte(&default_gamma_correction[brightness]);
+}
+
+void set_brightness(uint8_t brightness) {
+	max_brightness = gamma_correct(brightness);
+	// if (max_brightness < 2) max_brightness = 2;
+	FastLED.setBrightness(max_brightness);
+}
+
+void setup() {
+	if (SHOULD_OUTPUT) {
+		Serial.begin(BAUD_RATE);
+	}
+	FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+	set_brightness(encoder_position);
+	FastLED.clear();
+	FastLED.show();
+
+	Serial.println("Ready");
+}
+
+void loop() {
+	// static uint8_t last_brightness;
+
+	// if (max_brightness != last_brightness) {
+	// 	Serial.print("Brightness: ");
+	// 	Serial.println(max_brightness);
+
+	// 	last_brightness = max_brightness;
+	// }
+	// 
+	// if (button_pressed()) {
+	// 	Serial.println("Button pressed");
+	// 	encoder_position = default_brightness;
+	// 	set_brightness(encoder_position);
+	// }
+
+	FastLED.clear();
+
+	leds[0].setRGB(0,0,255);
+	// fade();
+	// fill_solid(leds, NUM_LEDS_USED, CRGB(255, 255, 255));
+	// brightness_scale();
+
+	FastLED.show();
+	// FastLED.delay(50);
+
+}
+
+void fade() {
+	static uint8_t curr_brightness = 1;
+	static int8_t direction = 1;
+
+	if (curr_brightness==1) direction = 1;
+	else if (curr_brightness==255) direction = -1;
+	curr_brightness += direction;
+
+	for(int i = 0; i < NUM_LEDS_USED; i++) {
+		uint8_t normalized = gamma_correct(curr_brightness);
+		leds[i].setRGB(normalized, normalized, normalized);
+	}
+}
+
+void brightness_scale() {
+	for(int i = 0; i < NUM_LEDS_USED; i++) {
+		uint8_t brightness = 0;
+		if (i != 0) brightness = (i*(256.0/NUM_LEDS_USED)-1);
+		uint8_t normalized = gamma_correct(brightness);
+		leds[i].setRGB(normalized, normalized, normalized);
+	}
+}
+
+void rainbow_wave(uint8_t thisSpeed, uint8_t deltaHue) {
+	// uint8_t thisHue = beatsin8(thisSpeed,0,255); // A simple rainbow wave.
+	uint8_t thisHue = beat8(thisSpeed, 255); // A simple rainbow march.
+	fill_rainbow(leds, NUM_LEDS, thisHue, deltaHue);
+}

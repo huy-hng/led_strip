@@ -6,8 +6,10 @@ name = "pypi"
 [packages]
 rpi-ws281x = "*"
 numpy = "*"
+numba = "*"
 
 [dev-packages]
+snakeviz = "*"
 
 [requires]
 python_version = "3.11"

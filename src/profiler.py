@@ -1,0 +1,50 @@
+import time
+from functools import wraps
+from functools import wraps
+from typing import Callable
+
+
+
+class Timer:
+    enable = True
+    combine_results = 40
+    start_time: float
+    timer: float = 0
+    step = 0
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def start(self):
+        if not self.enable: return
+        self.start_time = time.perf_counter()
+        self.step += 1
+
+    def end(self):
+        if not self.enable: return
+        self.timer += time.perf_counter() - self.start_time
+        self.print_time()
+
+    def dec(self, func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = time.perf_counter()
+
+            result = func(*args, **kwargs)
+
+            self.timer += time.perf_counter() - start_time
+
+            self.print_time(func.__name__)
+
+            self.step += 1
+            return result
+
+        return wrapper
+
+
+    def print_time(self, name=''):
+        if self.step % self.combine_results == 0:
+            if name:
+                name = f'.{name}'
+
+            print(f'{self.name}{name}: {(self.timer/self.combine_results)*1000:.2f}ms')
+            self.timer = 0

@@ -47,5 +47,12 @@ class Timer:
             if name:
                 name = f'.{name}'
 
-            print(f'{self.name}{name}: {(self.timer/self.combine_results)*1000:.2f}ms')
+
+            time_taken = self.timer/self.combine_results
+            unit = 's'
+            if time_taken < 0:
+                time_taken *= 1000
+                unit = 'ms'
+
+            print(f'{self.name}{name}: {time_taken:.2f}{unit}')
             self.timer = 0

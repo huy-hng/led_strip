@@ -1,6 +1,7 @@
 import math
 from rpi_ws281x import ws
 
+#-------------------------------------------LED Settings--------------------------------------------
 SIM_BRIGHTNESS	= 5
 MIN_DITHER      = 0.15
 # GAMMA			= math.e
@@ -18,3 +19,9 @@ LED_CHANNEL		= 0			# set to '1' for GPIOs 13, 19, 41, 45 or 53
 
 LED_STRIP		= ws.WS2812_STRIP
 # LED_STRIP		= ws.WS2811_STRIP_GRB
+
+
+#-------------------------------------------FFT Settings--------------------------------------------
+
+FFT_WINDOW_SIZE = 512
+FFT_HOP_SIZE = FFT_WINDOW_SIZE / 4

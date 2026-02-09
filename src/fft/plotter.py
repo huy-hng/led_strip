@@ -22,8 +22,7 @@ def simple_plot(xf, yf, freq_range=None):
     return plt
 
 
-def spectrogram(times, freqs, S_db, fname, fmax=None):
-    timer.start()
+def spectrogram(times, freqs, S_db, name, fmax=None):
 
     plt.figure(figsize=(10, 6))
 
@@ -34,21 +33,18 @@ def spectrogram(times, freqs, S_db, fname, fmax=None):
         shading="gouraud"
     )
 
-    plt.title("STFT Spectrogram")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Frequency (Hz)")
-    plt.colorbar(label="Magnitude (dB)")
+    plt.title(name)
+    # plt.xlabel("Time (s)")
+    # plt.ylabel("Frequency (Hz)")
+    # plt.colorbar(label="Magnitude (dB)")
 
     if fmax:
         ax = plt.gca()
         ax.set_ylim(top=fmax)
 
     plt.tight_layout()
-    timer.end('plotting')
 
-    timer.start()
-    save_plot(plt, fname)
-    timer.end('saving')
+    save_plot(plt, name)
     return plt
 
 def multiple_spectrogram(data, fname='spectrogram', fmax=None):

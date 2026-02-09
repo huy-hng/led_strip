@@ -1,12 +1,12 @@
 import traceback
 
 # from src.main import main
-from src.fft import fft, stft
+from src.fft import fft, stft, fft_testing
 
 if __name__ == '__main__':
     try:
         # main()
-        fft.main()
+        fft_testing.main()
         # stft.main()
         input('Press any key to continue.')
     # except KeyboardInterrupt:

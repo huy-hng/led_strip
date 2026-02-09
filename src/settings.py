@@ -1,10 +1,10 @@
 import math
 from rpi_ws281x import ws
 
-SIM_BRIGHTNESS	= 1          # Set to 0 for darkest and 255 for brightest
+SIM_BRIGHTNESS	= 5
+MIN_DITHER      = 0.15
 # GAMMA			= math.e
 GAMMA			= 2.2
-GAMMA_RESOLUTION = 4096
 
 START_OFFSET	= 0
 LED_COUNT_USED	= 100		# Number of LED pixels.

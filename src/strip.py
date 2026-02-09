@@ -1,12 +1,13 @@
 import time
 import math
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 import numba
-from numba import jit, njit, typed, types, int16
+from numba import jit, njit, typed, types
+from numba.typed import List
 from numba.experimental import jitclass
-
 import numpy as np
+import numpy.typing as npt
+
 from rpi_ws281x import PixelStrip
 
 from src import settings
@@ -31,8 +32,8 @@ class VStrip:
         self.led_count = led_count
 
 
-        # self.strip = np.zeros((settings.LED_COUNT, 4))
-        self.strip = [(0, 0, 0, 0) for _ in range(settings.LED_COUNT)]
+        self.strip = np.zeros((settings.LED_COUNT, 4))
+        # self.strip = [(0, 0, 0, 0) for _ in range(settings.LED_COUNT)]
 
     def setPixelColor(self, i: int, color):
         if len(color) == 3:
@@ -45,16 +46,16 @@ class VStrip:
 
         raise Exception('invalid color')
 
-    def getPixelColor(self, i):
+    def getPixelColor(self, i: int) -> list[float]:
         return self.strip[i]
 
     def numPixels(self):
         return self.led_count
 
-gamma_table: list[float] = [
-    pow(i / (settings.GAMMA_RESOLUTION-1), settings.GAMMA) * 255
-    for i in range(settings.GAMMA_RESOLUTION)
-]
+# gamma_table: list[float] = [
+#     pow(i / (settings.GAMMA_RESOLUTION-1), settings.GAMMA) * 255
+#     for i in range(settings.GAMMA_RESOLUTION)
+# ]
 
 @njit
 def gamma_correction(value: float) -> float:
@@ -64,6 +65,9 @@ def gamma_correction(value: float) -> float:
 @njit
 def brightness_adjust(value: float) -> float:
     # value = clamp8(value)
+    if value > 255: value = 255
+    if value < 0: value = 0
+
     return gamma_correction(value) * (settings.SIM_BRIGHTNESS/255)
     # return gamma_table[round((settings.GAMMA_RESOLUTION/256) * value)] * (settings.SIM_BRIGHTNESS/255)
     # return value * (settings.SIM_BRIGHTNESS/255)
@@ -74,72 +78,77 @@ def clamp8(x):
     return x
 
 
-class StripManager:
-    strips: list[VStrip]
+@njit(fastmath=True)
+def adjust_pixel(pixel: list[float], pos, dither_accum):
+    def dither(channel: int, value: float):
+        nonlocal dither_accum
 
-    def __init__(self, pixel_strip: PixelStrip):
+        if value < settings.MIN_DITHER: value = settings.MIN_DITHER
+        value = value + dither_accum[pos][channel]
+        remainder = value % 1
+        dither_accum[pos][channel] = remainder
+        return int(value)
 
-        # self.accum_r = np.zeros(2, dtype=np.float16)
-        self.accum_r = np.zeros(settings.LED_COUNT)
-        self.accum_g = np.zeros(settings.LED_COUNT)
-        self.accum_b = np.zeros(settings.LED_COUNT)
+    r = pixel[0]
+    g = pixel[1]
+    b = pixel[2]
 
-        self.pixel_strip = pixel_strip
+    if r != 0:
+        r = brightness_adjust(r)
+        r = dither(0, r)
 
-        # self.executor = ThreadPoolExecutor(max_workers=32)
-        # self.executor = ProcessPoolExecutor(max_workers=4)
+    if g != 0:
+        g = brightness_adjust(g)
+        g = dither(1, g)
 
-    # @njit
-    def adjust_pixel(self, pos):
-        pixel = self.strips[0].getPixelColor(pos)
+    if b != 0:
+        b = brightness_adjust(b)
+        b = dither(2, b)
 
-        r = pixel[0]
-        g = pixel[1]
-        b = pixel[2]
+    if pos == 1 or pos == 3: b = 0
+    return round(r), round(g), round(b)
 
-        if r != 0:
-            r = brightness_adjust(r)
-            r_remainder, r = math.modf(r + self.accum_r[pos])
-            self.accum_r[pos] = r_remainder
+# @timer.dec
+@njit(parallel=True, fastmath=True)
+def get_pixels(pixels, dither_accum, output_pixels):
+    for pos in numba.prange(settings.LED_COUNT):
+        output_pixels[pos] = adjust_pixel(pixels[pos], pos, dither_accum)
+    return output_pixels
 
-        if g != 0:
-            g = brightness_adjust(g)
-            g_remainder, g = math.modf(g + self.accum_g[pos])
-            self.accum_g[pos] = g_remainder
+dither_accum = np.zeros((settings.LED_COUNT, 3), dtype=np.float32)
+output_pixels = np.zeros((settings.LED_COUNT, 3), dtype=np.uint32)
 
-        if b != 0:
-            b = brightness_adjust(b)
-            b_remainder, b = math.modf(b + self.accum_b[pos])
-            self.accum_b[pos] = b_remainder
+# output_pixels = List()
+# for _ in range(settings.LED_COUNT):
+#     inner_list = List()
+#     inner_list.append(0)
+#     inner_list.append(0)
+#     inner_list.append(0)
+#     output_pixels.append(inner_list)
 
+@timer.dec
+def show(pixel_strip, strips: list[VStrip]):
 
+    # pixels = get_pixels(strips[0].strip, dither_accum, output_pixels)
+    # for i, pix in enumerate(pixels):
+    #     pixel_strip.setPixelColorRGB(i, pix[0], pix[1], pix[2])
+
+    for pos in range(settings.LED_COUNT):
+        r, g, b = adjust_pixel(strips[0].getPixelColor(pos), pos, dither_accum)
         if pos == 1 or pos == 3: b = 0
-        return r, g, b
+        pixel_strip.setPixelColorRGB(pos, r, g, b)
 
-    @timer.dec
-    def show(self, strips: list[VStrip]):
+    pixel_strip.show()
 
-        self.strips = strips
-
-        for pos in range(settings.LED_COUNT):
-            r, g, b = self.adjust_pixel(pos)
-            self.pixel_strip.setPixelColorRGB(pos, round(r), round(g), round(b))
-
-        self.pixel_strip.show()
+def clear(pixel_strip):
+    [pixel_strip.setPixelColor(i, 0) for i in range(pixel_strip.numPixels())]
+    pixel_strip.show()
 
 
-    # def refresh(self):
-    #     ...
-
-    def clear(self):
-        [self.pixel_strip.setPixelColor(i, 0) for i in range(self.pixel_strip.numPixels())]
-        self.pixel_strip.show()
-
-
-    def change_pixel(self, pos, r=None, g=None, b=None):
-        color = self.pixel_strip.getPixelColorRGB(pos)
-        if r is None: r = color.r
-        if g is None: g = color.g
-        if b is None: b = color.b
-        self.pixel_strip.setPixelColorRGB(pos, r, g, b)
+def change_pixel(pixel_strip, pos, r=None, g=None, b=None):
+    color = pixel_strip.getPixelColorRGB(pos)
+    if r is None: r = color.r
+    if g is None: g = color.g
+    if b is None: b = color.b
+    pixel_strip.setPixelColorRGB(pos, r, g, b)
 

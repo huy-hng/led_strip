@@ -13,8 +13,8 @@ def create(led_count, speed = 0.1, hue_distance = 0.03):
     while True:
         t = time.time()
         for pos in range(led_count):
-                hue = ((pos * hue_distance) + t * speed) % 1.0
-                r, g, b = hsv_to_rgb(hue, 1.0, 1)
-                strip.setPixelColor(pos + settings.START_OFFSET, (r, g, b))
+            hue = ((pos * hue_distance) + t * speed) % 1.0
+            r, g, b = hsv_to_rgb(hue, 1.0, 1)
+            strip.setPixelColor(pos + settings.START_OFFSET, (r, g, b))
 
         yield strip

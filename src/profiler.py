@@ -7,22 +7,23 @@ from typing import Callable
 
 class Timer:
     enable = True
-    combine_results = 40
+    combine_results: int
     start_time: float
     timer: float = 0
     step = 0
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, combine_results = 1) -> None:
         self.name = name
+        self.combine_results = combine_results
 
     def start(self):
         if not self.enable: return
         self.start_time = time.perf_counter()
         self.step += 1
 
-    def end(self):
+    def end(self, name=''):
         if not self.enable: return
         self.timer += time.perf_counter() - self.start_time
-        self.print_time()
+        self.print_time(name)
 
     def dec(self, func: Callable) -> Callable:
         @wraps(func)

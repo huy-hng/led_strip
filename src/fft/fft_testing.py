@@ -9,7 +9,7 @@ from scipy.fft import rfftfreq
 from scipy.signal import find_peaks
 
 from src import settings
-from src.settings import EPSILON
+from src.settings import EPSILON, path_to_assets
 from src.fft import plotter, fft, notes
 from src.profiler import Timer
 timer = Timer('fft', 1)
@@ -25,8 +25,8 @@ np.set_printoptions(threshold=sys.maxsize)
 # [370, 466,           494,          740, 932]
 
 def get_audio():
-    audio_file = '/home/pi/repositories/led_strip/assets/BotW - Item.wav'
-    # audio_file = '/home/pi/repositories/led_strip/assets/Frederic_Chopin_-_Nocturne_Eb_major_Opus_9,_number_2.wav'
+    audio_file = path_to_assets + 'BotW - Item.wav'
+    # audio_file = 'Frederic_Chopin_-_Nocturne_Eb_major_Opus_9,_number_2.wav'
 
     sample_rate, wav = wavfile.read(audio_file)
     # sample_duration = len(mono) / sample_rate
@@ -63,28 +63,6 @@ def filter_peaks(times, freqs, S_db):
         filtered[:, i] = mags
 
     return times, freqs, filtered
-
-def windowing(sample_rate, audio, window_size=settings.FFT_WINDOW_SIZE, hop_size=settings.FFT_HOP_SIZE):
-    update = fft.create_updater(window_size)
-
-    num_windows = math.ceil(len(audio)/hop_size)
-
-    xf = rfftfreq(window_size, 1 / sample_rate)
-    transformed = np.zeros((num_windows, len(xf)))
-
-    for i, chunk in enumerate(chunker(audio, int(hop_size), 0)):
-        yf = update(chunk)
-        transformed[i] = np.abs(yf) # type: ignore
-
-    transformed = np.swapaxes(transformed, 0, 1)
-
-    # transformed = 20 * np.log10(np.abs(transformed) + 1e-12)
-
-    times = [(hop_size / sample_rate) * i for i in range(num_windows)]
-
-    # times, xf, transformed = filter_peaks(times, xf, transformed)
-    return times, xf, transformed
-
 
 
 def looper(sample_rate, audio, wait=True):
@@ -179,12 +157,17 @@ def test():
     fmax = 3000
     fmin = 100
 
+    print(1)
     xf = rfftfreq(settings.FFT_WINDOW_SIZE, 1 / sample_rate)
+    print(2)
     times, history = create_spectrogram(sample_rate, audio, len(xf))
-    plotter.spectrogram(times, xf, history, f'spectrogram_test', fmax=fmax, fmin=fmin)
+    print(3)
+    plotter.spectrogram(times, xf, history, f'spectrogram_normal', fmax=fmax, fmin=fmin)
+    print(4)
 
     # data = banding(sample_rate, audio)
     # plotter.spectrogram(*data, f'spectogram_compression', fmax=fmax, fmin=fmin)
 
-    data = windowing(sample_rate, audio)
-    plotter.spectrogram(*data, f'spectrogram_normal', fmax=fmax, fmin=fmin)
+
+if __name__ == '__main__':
+    test()

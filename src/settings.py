@@ -2,6 +2,8 @@ import math
 from rpi_ws281x import ws
 
 EPSILON = 1e-12
+pre_path = '/home/huy/mnt/rpi_zero'
+path_to_assets = pre_path + '/home/pi/repositories/led_strip/assets/'
 
 #-------------------------------------------LED Settings--------------------------------------------
 SIM_BRIGHTNESS	= 50

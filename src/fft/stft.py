@@ -1,6 +1,5 @@
 import sys
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.io import wavfile
 from scipy.signal import ShortTimeFFT, windows, find_peaks
 

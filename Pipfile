@@ -5,14 +5,12 @@ name = "pypi"
 
 [packages]
 rpi-ws281x = "*"
-numpy = "*"
 numba = "*"
 scipy = "*"
-matplotlib = "*"
 
 [dev-packages]
+matplotlib = "*"
 snakeviz = "*"
-pyqt5 = "*"
 
 [requires]
 python_version = "3.11"

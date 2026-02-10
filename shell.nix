@@ -10,23 +10,14 @@ pkgs.mkShell {
 		stdenv.cc.cc # libstdc++
 		zlib # libz (for numpy)
 
-		glib
-		libGL
-		fontconfig
-		xorg.libX11
-		libxkbcommon
-		freetype
-		dbus
+		xorg.libX11 # for matplotlib
 
-		# libxcb
-		# libxcb-wm
-		# libxcb-util
-		# libxcb-image
-		# libxcb-errors
-		# libxcb-cursor
-		# libxcb-keysyms
-		# libxcb-render-util
-
+		# glib
+		# libGL
+		# fontconfig
+		# libxkbcommon
+		# freetype
+		# dbus
 	];
 
 	NIX_LD = lib.fileContents "${stdenv.cc}/nix-support/dynamic-linker";
@@ -35,8 +26,9 @@ pkgs.mkShell {
 		# If you're using Poetry, comment out `uv` and uncomment the following two lines:
 		#   python313 # set to your Python version
 		#   poetry
-		# uv
 		pipenv
+		uv
+		python314Packages.pyqt6
 	];
 
 	# Uncomment if you're using Poetry - since we're using a Nix-provided `python`
@@ -48,6 +40,8 @@ pkgs.mkShell {
 	'';
 	
 	
-	# QT_QPA_PLATFORM_PLUGIN_PATH="/home/huy/.local/share/virtualenvs/led_strip-lAiA01QS/lib/python3.11/site-packages/PyQt5/Qt5/plugins/platforms";
-	QT_QPA_PLATFORM_PLUGIN_PATH="${qt5.qtbase.bin}/lib/qt-${qt5.qtbase.version}/plugins/platforms";
+	# QT_QPA_PLATFORM_PLUGIN_PATH="/home/huy/.local/share/virtualenvs/led_strip-lAiA01QS/lib/python3.11/site-packages/PyQt6/Qt6/plugins/platforms";
+	# /home/huy/.local/share/virtualenvs/led_strip-lAiA01QS/lib/python3.11/site-packages/PyQt6
+	# QT_QPA_PLATFORM_PLUGIN_PATH="${qt5.qtbase.bin}/lib/qt-${qt5.qtbase.version}/plugins/platforms";
+	# QT_QPA_PLATFORM_PLUGIN_PATH="${qt6.qtbase.bin}/lib/qt-${qt6.qtbase.version}/plugins/platforms";
 }

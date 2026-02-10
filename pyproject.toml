@@ -1,0 +1,18 @@
+[project]
+name = "led-strip"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "numba>=0.63.1",
+    "numpy>=2.3.5",
+    "rpi-ws281x>=5.0.0",
+    "scipy>=1.17.0",
+]
+
+[dependency-groups]
+dev = [
+    "matplotlib>=3.10.8",
+    "snakeviz>=2.2.2",
+]

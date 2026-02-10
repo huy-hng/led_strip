@@ -1,12 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+import matplotlib
+# matplotlib.use('qtagg')
+# matplotlib.use('tkagg')
+# matplotlib.use('webagg')
+
+from src.settings import path_to_assets
 from src.profiler import Timer
 timer = Timer('plotter', 1)
 
 def save_plot(plot, name):
-    path = '/home/pi/repositories/led_strip/assets/fft_output/'
-    plot.savefig(path + name + '.png')
+
+    path = path_to_assets + 'fft_output/'
+    plot.show()
+    # plot.savefig(path + name + '.png')
 
 
 def simple_plot(xf, yf, name, fmax=None):

@@ -20,6 +20,35 @@ def create_updater(window_size=settings.FFT_WINDOW_SIZE):
 
 update = create_updater()
 
+# def fft_pipeline(new_samples):
+#     data = update(new_samples)
+#     # logarithmic compression
+#     # data = np.log1p(data)
+#     # mags_db = 20*np.log10(yf + EPSILON)
+
+
+#     bands = map_fft_to_log_bands(
+#         data,
+#         fs=sample_rate,
+#         N=settings.FFT_WINDOW_SIZE,
+#         band_centers=notes.piano_frequencies
+#     )
+
+#     bands = fft.filter_peaks(bands)
+
+#     # peak tracking
+#     current_peak = max(bands.max(), current_peak * settings.FFT_PEAK_DECAY)
+
+#     # normalize
+#     normalized = bands / (current_peak + EPSILON)
+
+#     # noise gate
+#     normalized[normalized < settings.FFT_NOISE_GATE] = 0
+
+#     # map to 255
+#     normalized = np.clip(normalized * 255, 0, 255).astype(np.uint8)
+
+
 
 def map_fft_to_log_bands(mag, fs, N, band_centers) -> np.ndarray:
     """

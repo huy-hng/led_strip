@@ -109,3 +109,6 @@ frequencies = (
     7902.133,
 )
 piano_frequencies = frequencies[9:97]
+
+def get_frequency_list():
+    return piano_frequencies

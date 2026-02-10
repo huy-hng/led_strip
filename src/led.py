@@ -1,7 +1,5 @@
-import cProfile
 import pstats
 
-import time
 import atexit
 
 from rpi_ws281x import PixelStrip
@@ -11,7 +9,7 @@ from src import settings
 from src.animations import rainbow, test, music
 from src import profiler
 
-timer = profiler.Timer('main')
+timer = profiler.Timer('main', combine_results=40)
 timer.enable = False
 
 pixel_strip = PixelStrip(
@@ -51,7 +49,10 @@ def minimal():
 def normal():
     vstrips = []
     for animation in animations:
-        vstrips.append(next(animation))
+        try:
+            vstrips.append(next(animation))
+        except StopIteration:
+            continue
     strip_man.show(pixel_strip, vstrips)
 
 def profiling_stats(pr, name):
@@ -65,11 +66,10 @@ def profiling_stats(pr, name):
 def exit_handler() -> None:
     strip_man.clear(pixel_strip)
 
-def main():
+def run():
     global step
     print('Press Ctrl-C to quit.')
 
-    # start = time.perf_counter()
     while True:
         timer.start()
 
@@ -78,11 +78,11 @@ def main():
         normal()
         # minimal()
         # time.sleep(2/1000)
-        time.sleep(10/1000)
+        # time.sleep(10/1000)
 
         timer.end()
         step += 1
 
 
 if __name__ == '__main__':
-    main()
+    run()

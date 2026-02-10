@@ -13,9 +13,8 @@ from rpi_ws281x import PixelStrip
 from src import settings
 from src.profiler import Timer
 
-timer = Timer('strip')
-
-
+timer = Timer('strip', combine_results=100)
+timer.enable = False
 
 spec = [
     ('start_led_index', numba.int16),
@@ -51,6 +50,9 @@ class VStrip:
 
     def numPixels(self):
         return self.led_count
+
+    def turn_off(self):
+        self.strip = np.zeros((settings.LED_COUNT, 4))
 
 # gamma_table: list[float] = [
 #     pow(i / (settings.GAMMA_RESOLUTION-1), settings.GAMMA) * 255
@@ -133,7 +135,9 @@ def show(pixel_strip, strips: list[VStrip]):
     # for i, pix in enumerate(pixels):
     #     pixel_strip.setPixelColorRGB(i, pix[0], pix[1], pix[2])
 
+
     for pos in range(settings.LED_COUNT):
+        if len(strips) == 0: break
         r, g, b = adjust_pixel(strips[0].getPixelColor(pos), pos, dither_accum)
         if pos == 1 or pos == 3: b = 0
         pixel_strip.setPixelColorRGB(pos, r, g, b)

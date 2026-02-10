@@ -2,27 +2,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from src.profiler import Timer
-timer = Timer('fft', 1)
+timer = Timer('plotter', 1)
 
 def save_plot(plot, name):
     path = '/home/pi/repositories/led_strip/assets/fft_output/'
     plot.savefig(path + name + '.png')
 
 
-def simple_plot(xf, yf, freq_range=None):
+def simple_plot(xf, yf, name, fmax=None):
     plt.figure(figsize=[34.4, 5], dpi=100)
     plt.plot(xf, np.abs(yf)) # type: ignore
 
-    if freq_range:
+    if fmax:
         ax = plt.gca()
+        ax.set_xlim(right=fmax)
         # ax.set_xscale('log')
-        ax.set_xlim(left=freq_range[0], right=freq_range[1])
         # ax.xaxis.set_ticks(frequencies[start_note:end_note+1])
 
+    plt.tight_layout()
+    save_plot(plt, name)
     return plt
 
-
-def spectrogram(times, freqs, S_db, name, fmax=None):
+@timer.dec
+def spectrogram(times, freqs, S_db, name, fmax=None, fmin=None):
 
     plt.figure(figsize=(10, 6))
 
@@ -36,11 +38,12 @@ def spectrogram(times, freqs, S_db, name, fmax=None):
     plt.title(name)
     # plt.xlabel("Time (s)")
     # plt.ylabel("Frequency (Hz)")
-    # plt.colorbar(label="Magnitude (dB)")
+    plt.colorbar(label="Magnitude (dB)")
 
-    if fmax:
-        ax = plt.gca()
-        ax.set_ylim(top=fmax)
+    ax = plt.gca()
+    ax.set_yscale('log')
+    if fmax: ax.set_ylim(top=fmax)
+    if fmin: ax.set_ylim(bottom=fmin)
 
     plt.tight_layout()
 

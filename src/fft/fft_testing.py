@@ -1,21 +1,20 @@
-import bisect
-import time
-from itertools import zip_longest
 import sys
 import math
+import time
+from itertools import zip_longest
 
 import numpy as np
-from matplotlib import pyplot as plt
 from scipy.io import wavfile
-from scipy.fft import rfft, rfftfreq
+from scipy.fft import rfftfreq
 from scipy.signal import find_peaks
 
 from src import settings
-from src.fft import notes, plotter
+from src.settings import EPSILON
+from src.fft import plotter, fft, notes
 from src.profiler import Timer
 timer = Timer('fft', 1)
 
-# np.set_printoptions(threshold=sys.maxsize)
+np.set_printoptions(threshold=sys.maxsize)
 
 # ax.set_xlim(left=0, right=3520)
 # ax.set_ylim(bottom=0, top=7.2e6)
@@ -25,65 +24,22 @@ timer = Timer('fft', 1)
 # [740,      932, 1109,988,1245,1480,2217]
 # [370, 466,           494,          740, 932]
 
-def map_to_closest(arr1, arr2):
-    indices = []
+def get_audio():
+    audio_file = '/home/pi/repositories/led_strip/assets/BotW - Item.wav'
+    # audio_file = '/home/pi/repositories/led_strip/assets/Frederic_Chopin_-_Nocturne_Eb_major_Opus_9,_number_2.wav'
 
-    for x in arr1:
-        i = bisect.bisect_left(arr2, x)
+    sample_rate, wav = wavfile.read(audio_file)
+    # sample_duration = len(mono) / sample_rate
+    print(sample_rate, wav.shape)
 
-        if i == 0:
-            closest_i = 0
-        elif i == len(arr2):
-            closest_i = len(arr2) - 1
-        else:
-            before = arr2[i - 1]
-            after = arr2[i]
-            closest_i = i - 1 if abs(x - before) <= abs(x - after) else i
+    audio = wav.mean(axis=1)
 
-        indices.append((closest_i, arr2[closest_i]))
-        # indices.append(closest_i)
+    return sample_rate, audio
 
-    return indices
 
 def chunker(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=fillvalue)
-
-def filter_by_notes(yf, xf):
-    frequencies = map_to_closest(notes.piano_frequencies, xf)
-
-    transformed = np.zeros(len(frequencies))
-    region_factor = 30
-    for i, f in enumerate(frequencies):
-        start = -int(f[1]/region_factor) + f[0]
-        end = int(f[1]/region_factor) + f[0]
-        transformed[i] = sum(yf[start:end]) # type: ignore
-
-
-    transformed *= 255 / transformed.max()
-
-    plot = plotter.simple_plot([freq for _, freq in frequencies], transformed)
-    plotter.save_plot(plot, 'fft')
-
-def detect_peaks(xf, yf):
-    mag = np.abs(yf)
-
-    height = np.max(mag) * 0.1
-    prominence = np.max(mag) * 0.05
-    distance = 5
-
-    peaks, props = find_peaks(
-        mag,
-        height=height, #threshold
-        distance=distance, #min_bin_spacing
-        prominence=prominence
-    )
-
-    peak_freqs = xf[peaks]
-    peak_mags  = mag[peaks]
-
-    plot = plotter.simple_plot(peak_freqs, peak_mags)
-    plotter.save_plot(plot, 'peaks')
 
 def filter_peaks(times, freqs, S_db):
     filtered = np.zeros_like(S_db)
@@ -108,24 +64,16 @@ def filter_peaks(times, freqs, S_db):
 
     return times, freqs, filtered
 
-def windowing(mono, sample_rate, window_size, hop_size):
-    buffer = np.zeros(window_size)
-    def update(new_samples):
-        nonlocal buffer
-        buffer = np.roll(buffer, -len(new_samples))
-        buffer[-len(new_samples):] = new_samples
-        yf = rfft(buffer)
-        return yf
+def windowing(sample_rate, audio, window_size=settings.FFT_WINDOW_SIZE, hop_size=settings.FFT_HOP_SIZE):
+    update = fft.create_updater(window_size)
 
-    num_windows = math.ceil(len(mono)/hop_size)
+    num_windows = math.ceil(len(audio)/hop_size)
 
     xf = rfftfreq(window_size, 1 / sample_rate)
     transformed = np.zeros((num_windows, len(xf)))
 
-    for i, chunk in enumerate(chunker(mono, int(hop_size), 0)):
-        # timer.start()
+    for i, chunk in enumerate(chunker(audio, int(hop_size), 0)):
         yf = update(chunk)
-        # timer.end(f'fft duration iteration {i}')
         transformed[i] = np.abs(yf) # type: ignore
 
     transformed = np.swapaxes(transformed, 0, 1)
@@ -138,28 +86,105 @@ def windowing(mono, sample_rate, window_size, hop_size):
     return times, xf, transformed
 
 
-def test_params(mono, sample_rate, win, hop):
-    timer.start()
-    data = windowing(mono, sample_rate, win, hop)
-    timer.end(f'fft {win=} {hop=}')
 
-    timer.start()
-    plotter.spectrogram(*data, f'fft_win{win}_hop{hop}_spectrogram', fmax=2500)
-    timer.end('saving')
-    print()
+def looper(sample_rate, audio, wait=True):
+    chunks = chunker(audio, int(settings.FFT_HOP_SIZE), 0)
+    wait_time = settings.FFT_HOP_SIZE / sample_rate
+    start_time = time.perf_counter()
+
+    current_peak = settings.FFT_STARTING_PEAK
+
+    while True:
+
+        if wait and time.perf_counter() - start_time < wait_time:
+            yield
+            continue
+
+        start_time = time.perf_counter()
+
+        try:
+            new_samples = next(chunks)
+        except StopIteration:
+            if not wait: return
+            return np.zeros(settings.LED_COUNT)
+
+        yf = fft.update(new_samples)
+
+        # logarithmic compression
+        # yf = np.log1p(yf)
+        # # mags_db = 20*np.log10(yf + EPSILON)
 
 
-def main():
-    sample_rate, wav = wavfile.read('/home/pi/repositories/led_strip/assets/BotW - Item.wav')
-    mono = wav.mean(axis=1)
-    # sample_duration = len(mono) / sample_rate
+        # bands = fft.map_fft_to_log_bands(
+        #     yf,
+        #     fs=sample_rate,
+        #     N=settings.FFT_WINDOW_SIZE,
+        #     band_centers=notes.piano_frequencies
+        # )
 
-    params = [
-        # (2048, 512),
-    ]
-    for param in params:
-        test_params(mono, sample_rate, param[0], param[1])
+        # bands = fft.filter_peaks(bands)
 
-    # image *= 255.0/image.max()
-    # xf, yf = fft(mono, sample_rate)
-    # detect_peaks(xf, yf)
+        # # peak tracking
+        # current_peak = max(bands.max(), current_peak * settings.FFT_PEAK_DECAY)
+
+        # # normalize
+        # normalized = bands / (current_peak + EPSILON)
+
+        # # noise gate
+        # normalized[normalized < settings.FFT_NOISE_GATE] = 0
+
+        # # map to 255
+        # normalized = np.clip(normalized * 255, 0, 255).astype(np.uint8)
+        # yield normalized
+        yield yf
+
+
+
+@timer.dec
+def banding(sample_rate, audio):
+    num_windows = math.ceil(len(audio)/settings.FFT_HOP_SIZE)
+
+    bands_history = np.zeros((num_windows, len(notes.piano_frequencies)))
+
+    for i, bands in enumerate(looper(sample_rate, audio, wait=False)):
+        bands_history[i] = bands
+
+    bands_history = np.swapaxes(bands_history, 0, 1)
+
+    times = [(settings.FFT_HOP_SIZE / sample_rate) * i for i in range(num_windows)]
+    return times, notes.piano_frequencies, bands_history
+
+
+@timer.dec
+def create_spectrogram(sample_rate, audio, len_frequencies):
+    num_windows = math.ceil(len(audio)/settings.FFT_HOP_SIZE)
+
+    history = np.zeros((num_windows, len_frequencies))
+
+    for i, yf in enumerate(looper(sample_rate, audio, wait=False)):
+        history[i] = yf
+
+    history = np.swapaxes(history, 0, 1)
+
+    times = [(settings.FFT_HOP_SIZE / sample_rate) * i for i in range(num_windows)]
+    return times, history
+
+
+sample_rate, audio = get_audio()
+def get_mock_audio():
+    return looper(sample_rate, audio)
+
+
+def test():
+    fmax = 3000
+    fmin = 100
+
+    xf = rfftfreq(settings.FFT_WINDOW_SIZE, 1 / sample_rate)
+    times, history = create_spectrogram(sample_rate, audio, len(xf))
+    plotter.spectrogram(times, xf, history, f'spectrogram_test', fmax=fmax, fmin=fmin)
+
+    # data = banding(sample_rate, audio)
+    # plotter.spectrogram(*data, f'spectogram_compression', fmax=fmax, fmin=fmin)
+
+    data = windowing(sample_rate, audio)
+    plotter.spectrogram(*data, f'spectrogram_normal', fmax=fmax, fmin=fmin)

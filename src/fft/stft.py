@@ -101,10 +101,7 @@ def main():
     print(data[1].shape)
     print(data[2].shape)
 
-    timer.start()
-    spectrogram = plotter.specrogram(*data)
-    plotter.save_plot(spectrogram, 'stft_spectrogram')
-    timer.end('saving')
+    plotter.spectrogram(*data, 'stft_spectrogram')
 
     # timer.start()
     # data = filter_peaks(*data)

@@ -1,8 +1,10 @@
 import math
 from rpi_ws281x import ws
 
+EPSILON = 1e-12
+
 #-------------------------------------------LED Settings--------------------------------------------
-SIM_BRIGHTNESS	= 5
+SIM_BRIGHTNESS	= 50
 MIN_DITHER      = 0.15
 # GAMMA			= math.e
 GAMMA			= 2.2
@@ -23,5 +25,8 @@ LED_STRIP		= ws.WS2812_STRIP
 
 #-------------------------------------------FFT Settings--------------------------------------------
 
-FFT_WINDOW_SIZE = 512
+FFT_WINDOW_SIZE = 1024
 FFT_HOP_SIZE = FFT_WINDOW_SIZE / 4
+FFT_NOISE_GATE = 0.02
+FFT_PEAK_DECAY = 0.995
+FFT_STARTING_PEAK = 10e5

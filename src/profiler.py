@@ -50,7 +50,7 @@ class Timer:
 
             time_taken = self.timer/self.combine_results
             unit = 's'
-            if time_taken < 0:
+            if time_taken < 1:
                 time_taken *= 1000
                 unit = 'ms'
 

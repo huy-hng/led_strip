@@ -8,8 +8,6 @@ from scipy.fft import rfft, rfftfreq
 
 from scipy.signal import find_peaks
 
-
-from src.fft import notes
 from src import settings
 from src.settings import EPSILON
 
@@ -66,15 +64,14 @@ def create_band_map(sample_rate, window_size, band_centers):
 
     return freqs, band_centers, edges
 
-
 fft_freqs, band_centers, band_edges = create_band_map(
     settings.INPUT_SAMPLE_RATE,
     settings.FFT_WINDOW_SIZE,
-    notes.piano_frequencies
+    settings.FREQUENCY_RANGE
 )
 
-@Timer(once=True)
-# @njit(parallel=True, fastmath=True, cache=True)
+@Timer(time_between_prints=settings.TIME_BETWEEN_PRINTS)
+@njit(parallel=True, fastmath=True, cache=True)
 def map_bands(mag) -> np.ndarray:
     # --- aggregate bins ---
     band_values = np.zeros(len(band_centers))
@@ -89,22 +86,24 @@ def map_bands(mag) -> np.ndarray:
 
     return band_values
 
+# @Timer(time_between_prints=settings.TIME_BETWEEN_PRINTS)
 def fft_pipeline(new_samples):
     global current_peak
-    data = fft(new_samples)
 
-    # logarithmic compression
-    # data = np.log1p(data)
-    # data = 20*np.log10(data + EPSILON)
+    with Timer('fft', time_between_prints=settings.TIME_BETWEEN_PRINTS):
+        data = fft(new_samples)
 
-    # data = map_bands(data)
+    data[data < settings.FFT_MIN_ACTIVATION] = 0 # noise gate
+    data = map_bands(data)
 
-    # data = filter_peaks(data)
 
-    # current_peak = max(data.max(), current_peak * settings.FFT_PEAK_DECAY) # peak tracking
-    # data = data / (current_peak + EPSILON) # normalize
-    # data[data < settings.FFT_NOISE_GATE] = 0 # noise gate
-    # data = np.clip(data * 255, 0, 255).astype(np.uint8) # map to 255
+    with Timer('fft normalize', time_between_prints=settings.TIME_BETWEEN_PRINTS):
+        current_peak = max(data.max(), current_peak * settings.FFT_PEAK_DECAY) # peak tracking
+        data = data / (current_peak + EPSILON) # normalize
+        data[data < settings.FFT_NOISE_GATE] = 0 # noise gate
+        data = np.clip(data * 255, 0, 255).astype(np.uint16) # map to 255
+
+    data = filter_peaks(data)
 
     return data
 
@@ -129,20 +128,18 @@ def map_to_closest(arr1, arr2):
     return indices
 
 def filter_by_notes(yf, xf):
-    frequencies = map_to_closest(notes.piano_frequencies, xf)
+    freqs = map_to_closest(settings.FREQUENCY_RANGE, xf)
 
-    transformed = np.zeros(len(frequencies))
+    transformed = np.zeros(len(freqs))
     region_factor = 30
-    for i, f in enumerate(frequencies):
+    for i, f in enumerate(freqs):
         start = -int(f[1]/region_factor) + f[0]
         end = int(f[1]/region_factor) + f[0]
         transformed[i] = sum(yf[start:end])
 
     transformed *= 255 / transformed.max()
 
-    # plot = plotter.simple_plot([freq for _, freq in frequencies], transformed)
-    # plotter.save_plot(plot, 'fft')
-
+@Timer(time_between_prints=settings.TIME_BETWEEN_PRINTS)
 def filter_peaks(yf) -> np.ndarray:
     mag = np.abs(yf)
 

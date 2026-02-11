@@ -1,3 +1,5 @@
+from scipy.fft import rfftfreq
+
 frequencies = (
     16.35160,
     17.32391,
@@ -108,7 +110,3 @@ frequencies = (
     7458.620,
     7902.133,
 )
-piano_frequencies = frequencies[9:97]
-
-def get_frequency_list():
-    return piano_frequencies

@@ -5,8 +5,7 @@ from rpi_ws281x import PixelStrip
 from src import settings
 from src.util import Timer
 
-with Timer('strip'):
-    from src import strip as strip_man
+from src import strip as strip_man
 
 from src.animations import music, rainbow, test
 
@@ -28,7 +27,7 @@ animations = [
 ]
 
 step = 0
-@Timer('minimal loop', 40)
+@Timer('minimal loop', settings.TIME_BETWEEN_PRINTS)
 def minimal():
     global step
     for pos in range(settings.LED_COUNT):
@@ -45,7 +44,7 @@ def minimal():
     pixel_strip.show()
 
 
-@Timer('led loop', 100)
+@Timer('led loop', settings.TIME_BETWEEN_PRINTS)
 def normal():
     vstrips = []
     for animation in animations:

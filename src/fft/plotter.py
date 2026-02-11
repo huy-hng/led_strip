@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import matplotlib
+# import matplotlib
 # matplotlib.use('qtagg')
 # matplotlib.use('tkagg')
 # matplotlib.use('webagg')
@@ -10,13 +10,13 @@ from src.settings import project_path
 from src.util import Timer
 
 def save_plot(plot, name):
-    plot.savefig(f'{project_path}/assets/fft_output/{name}.png')
+    plot.savefig(f'{project_path}/logs/fft_output/{name}.png')
     # plot.show()
 
 
 def simple_plot(xf, yf, name, fmax=None):
     plt.figure(figsize=[34.4, 5], dpi=100)
-    plt.plot(xf, np.abs(yf)) # type: ignore
+    plt.plot(xf, np.abs(yf))
 
     if fmax:
         ax = plt.gca()
@@ -28,11 +28,11 @@ def simple_plot(xf, yf, name, fmax=None):
     save_plot(plt, name)
     return plt
 
-# @Timer('spectrogram')
+@Timer('save spectrogram')
 def spectrogram(times, freqs, S_db, name, fmax=None, fmin=None):
 
     plt.style.use('dark_background')
-    plt.figure(figsize=(10, 6), facecolor='black')
+    plt.figure(figsize=(14, 14), facecolor='black')
 
     plt.pcolormesh(
         times,

@@ -98,7 +98,7 @@ def adjust_pixel(pixel: list[float], pos, dither_accum):
     if pos == 1 or pos == 3: b = 0
     return round(r), round(g), round(b)
 
-Timer(once=True)
+@Timer(once=True)
 @njit(parallel=True, fastmath=True, cache=True)
 def get_pixels(pixels, dither_accum, output_pixels):
     for pos in prange(settings.LED_COUNT): # ty: ignore
@@ -116,7 +116,7 @@ output_pixels = np.zeros((settings.LED_COUNT, 3), dtype=np.uint32)
 #     inner_list.append(0)
 #     output_pixels.append(inner_list)
 
-# @Timer(None, 100)
+@Timer(None, settings.TIME_BETWEEN_PRINTS)
 def show(pixel_strip, strips: list[VStrip]):
 
     pixels = get_pixels(strips[0].strip, dither_accum, output_pixels)

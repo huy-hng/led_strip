@@ -1,15 +1,33 @@
 import time
 from functools import wraps
 from contextlib import ContextDecorator
+from typing import Literal
+from dataclasses import dataclass
 
+def get_time_unit(time_taken):
+    unit = 's'
+    if time_taken < 1:
+        time_taken *= 1000
+        unit = 'ms'
+    return time_taken, unit
+
+
+@dataclass
 class _Timer(ContextDecorator):
     name: str | None
-    # time_between_prints: float = 0
-    average_results: int
+    time_between_prints: float
+    average_steps: int
+    print_strategy: str
+    once: bool
 
-    start_time: float
+
+    total_time: float = 0
+    averaged_time: float = 0
+
+    last_print = time.perf_counter()
+
+    step_at_last_print: int = 0
     step: int = 0
-    combined_time: float = 0
     callback = None
 
     def _recreate_cm(self):
@@ -17,6 +35,7 @@ class _Timer(ContextDecorator):
 
     def __call__(self, func):
         if self.callback is not None:
+            self.name = func.__name__
             self.callback(func.__name__, self)
 
         @wraps(func)
@@ -25,50 +44,57 @@ class _Timer(ContextDecorator):
                 return func(*args, **kwds)
         return inner
 
-    def __init__(self, name, average_results, once):
-        self.name = name
-        self.average_results = average_results
-        self.once = once
-
     def __enter__(self):
         self.start_time = time.perf_counter()
 
     def __exit__(self, *exc):
-        self.combined_time += time.perf_counter() - self.start_time
+        end_time = time.perf_counter()
+        self.averaged_time += end_time - self.start_time
 
         self.step += 1
 
-        if self.once is False and self.step % self.average_results == 0:
-            self.print_time()
-            return
-
         if self.once:
             if self.step > 1: return
-            else: self.print_time()
+            else: self.print_time(end_time - self.start_time)
+            return
+
+        time_taken = None
+        if self.print_strategy == 'time' and end_time - self.last_print > self.time_between_prints:
+            time_taken = self.averaged_time / (self.step - self.step_at_last_print)
+
+        if self.print_strategy == 'steps' and self.step % self.average_steps == 0:
+            time_taken = self.averaged_time / self.average_steps
 
 
+        if time_taken is not None:
+            self.last_print = end_time
+            self.print_time(time_taken)
 
-    def print_time(self):
-        time_taken = self.combined_time / self.average_results
-        self.combined_time = 0
 
-        unit = 's'
-        if time_taken < 1:
-            time_taken *= 1000
-            unit = 'ms'
+    def print_time(self, time_taken):
+
+        self.total_time += self.averaged_time
+        self.averaged_time = 0
+        self.step_at_last_print = self.step
+
+        time_taken, unit = get_time_unit(time_taken)
+        total_time, total_unit = get_time_unit(self.total_time)
 
         name = ''
         if self.name is not None:
             name = f'{self.name}: '
-        print(f'{name}{time_taken:.2f}{unit} on average for {self.step} steps')
+        print(f'{name}{time_taken:.2f}{unit} (cum: {total_time:.2f}{total_unit})')
+
+
 
 class Timer:
     timers: dict = {}
-    def __new__(cls, name=None, average_results=1, once=False) -> _Timer:
+    print_strategy: Literal['time', 'steps']
+    def __new__(cls, name=None, time_between_prints=0, average_steps=1, print_strategy='time', once=False) -> _Timer:
         if name in cls.timers:
             return cls.timers[name]
 
-        timer = _Timer(name, average_results, once)
+        timer = _Timer(name, time_between_prints, average_steps, print_strategy, once)
 
         if name is None or name == '':
             timer.callback = cls.save_timer
@@ -88,22 +114,23 @@ class Timer:
 
 
 if __name__ == '__main__':
-    loops = 10
-    average = 10
+    loops = 100
+    # average = 10
 
-    @Timer()
+    @Timer(time_between_prints=0.4)
     def test_fn():
-        time.sleep(0.001)
+        time.sleep(0.01)
 
-    @Timer()
+    @Timer(time_between_prints=1)
     def test_fn1():
-        time.sleep(0.001)
+        time.sleep(0.01)
 
-    print(Timer.__dict__)
-    # start = time.perf_counter()
-    # for _ in range(loops):
-    #     test_fn()
-    #     with Timer('with', average):
-    #         time.sleep(0.002)
+    start = time.perf_counter()
+    for _ in range(loops):
+        test_fn()
+        test_fn1()
+        # with Timer('with', average):
+        #     time.sleep(0.002)
 
-    # print(f'actual time: {(time.perf_counter()-start)/loops*1000:.2f}ms')
+    print(f'actual time: {(time.perf_counter()-start)/loops*1000:.2f}ms')
+    print(f'total time: {(time.perf_counter()-start):.2f}s')

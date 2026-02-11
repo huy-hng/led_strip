@@ -1,17 +1,9 @@
-from numba import njit, types, prange, int16
+from numba import njit, prange
 import numpy as np
 
 from src import settings
 from src.util import Timer
 
-spec = [
-    ('start_led_index', int16),
-    ('led_count', int16),
-    ('strip', types.ListType(types.ListType(int16))),
-]
-
-# @jitclass(spec)
-# @jitclass
 class VStrip:
     def __init__(self, led_count: int, start_led_index: int = 0):
 
@@ -42,11 +34,6 @@ class VStrip:
     def turn_off(self):
         self.strip = np.zeros((settings.LED_COUNT, 4))
 
-# gamma_table: list[float] = [
-#     pow(i / (settings.GAMMA_RESOLUTION-1), settings.GAMMA) * 255
-#     for i in range(settings.GAMMA_RESOLUTION)
-# ]
-
 @njit
 def gamma_correction(value: float) -> float:
     return pow(value / 255.0, settings.GAMMA) * 255
@@ -54,19 +41,10 @@ def gamma_correction(value: float) -> float:
 
 @njit
 def brightness_adjust(value: float) -> float:
-    # value = clamp8(value)
     if value > 255: value = 255
     if value < 0: value = 0
 
     return gamma_correction(value) * (settings.SIM_BRIGHTNESS/255)
-    # return gamma_table[round((settings.GAMMA_RESOLUTION/256) * value)] * (settings.SIM_BRIGHTNESS/255)
-    # return value * (settings.SIM_BRIGHTNESS/255)
-
-def clamp8(x):
-    # if x > 255: return 255
-    # if x < 0: return 0
-    return x
-
 
 @njit(fastmath=True)
 def adjust_pixel(pixel: list[float], pos, dither_accum):
@@ -108,14 +86,6 @@ def get_pixels(pixels, dither_accum, output_pixels):
 dither_accum = np.zeros((settings.LED_COUNT, 3), dtype=np.float32)
 output_pixels = np.zeros((settings.LED_COUNT, 3), dtype=np.uint32)
 
-# output_pixels = List()
-# for _ in range(settings.LED_COUNT):
-#     inner_list = List()
-#     inner_list.append(0)
-#     inner_list.append(0)
-#     inner_list.append(0)
-#     output_pixels.append(inner_list)
-
 @Timer(None, settings.TIME_BETWEEN_PRINTS)
 def show(pixel_strip, strips: list[VStrip]):
 
@@ -135,7 +105,6 @@ def show(pixel_strip, strips: list[VStrip]):
 def clear(pixel_strip):
     [pixel_strip.setPixelColor(i, 0) for i in range(pixel_strip.numPixels())]
     pixel_strip.show()
-
 
 def change_pixel(pixel_strip, pos, r=None, g=None, b=None):
     color = pixel_strip.getPixelColorRGB(pos)

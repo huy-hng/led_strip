@@ -26,6 +26,7 @@ pkgs.mkShell {
 		pipenv
 		uv
 		python314Packages.pyqt6
+		portaudio
 	];
 
 	UV_PROJECT_ENVIRONMENT="/home/huy/.local/share/virtualenvs/led_strip";

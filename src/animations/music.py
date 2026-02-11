@@ -1,8 +1,11 @@
 import numpy as np
 
+from src.util import Timer
 from src.strip import VStrip
-from src.fft.fft_testing import get_mock_audio
+
+from src.fft.fft import fft_pipeline
 from src.fft.notes import get_frequency_list
+from src.audio_input import start_stream
 
 alpha = 0.9
 
@@ -26,41 +29,30 @@ def instant_attack_smoothing(prev, current):
 def create(led_count: int):
     strip = VStrip(led_count)
 
+    smoothing_fn = temporal_smoothing
     prev_vals = np.zeros(len(get_frequency_list()))
 
-    def loop(smoothing_fn=None):
-        nonlocal prev_vals
-        freqs = get_mock_audio()
-        for values in freqs:
-            if values is None: continue
-            values = np.flip(values)
+    get_freqs = start_stream(fft_pipeline)
 
-            if smoothing_fn:
-                smoothed = smoothing_fn(prev_vals, values)
-            else:
-                smoothed = values
+    while True:
+    # for freqs in start_stream(fft_pipeline):
+        with Timer('fft', 60):
+            freqs = next(get_freqs)
 
-            prev_vals = smoothed
+        freqs = np.flip(freqs)
 
-            # for v, s in zip(values, smoothed):
-            #     print(v, round(s, 2))
-            # input('Press any key to continue.')
+        if smoothing_fn:
+            smoothed = smoothing_fn(prev_vals, freqs)
+        else:
+            smoothed = freqs
 
-            for i, val in enumerate(values):
-                strip.setPixelColor(i, (val, val, val))
+        prev_vals = smoothed
 
-            yield strip
+        for i, val in enumerate(freqs):
+            strip.setPixelColor(i, (val, val, val))
 
-    # while True:
-
-    for strip in loop():
         yield strip
 
-    for strip in loop(temporal_smoothing):
-        yield strip
-
-    for strip in loop(instant_attack_smoothing):
-        yield strip
 
     strip.turn_off()
     yield strip

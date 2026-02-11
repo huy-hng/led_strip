@@ -4,8 +4,6 @@ from scipy.io import wavfile
 from scipy.signal import ShortTimeFFT, windows, find_peaks
 
 from src.fft import plotter
-from src.profiler import Timer
-timer = Timer('fft', 1)
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -93,9 +91,7 @@ def main():
     mono = wav.mean(axis=1)
 
 
-    timer.start()
     data = stft(mono, sample_rate, window_size=1024, fmax=2500)
-    timer.end('stft')
     print(data[0].shape)
     print(data[1].shape)
     print(data[2].shape)

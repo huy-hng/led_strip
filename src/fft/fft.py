@@ -1,10 +1,18 @@
 import bisect
-from src.fft import notes
 
+from src.util import Timer
+
+from numba import njit, prange
 import numpy as np
+from scipy.fft import rfft, rfftfreq
+
+with Timer('find_peaks'):
+    from scipy.signal import find_peaks
+
+
+from src.fft import notes
 from src import settings
-from scipy.fft import rfft
-from scipy.signal import find_peaks
+from src.settings import EPSILON
 
 def create_updater(window_size=settings.FFT_WINDOW_SIZE):
     buffer = np.zeros(window_size)
@@ -15,42 +23,15 @@ def create_updater(window_size=settings.FFT_WINDOW_SIZE):
 
         yf = rfft(buffer)
 
-        return np.abs(yf) # type: ignore
+        return np.abs(yf)
     return update
 
 update = create_updater()
 
-# def fft_pipeline(new_samples):
-#     data = update(new_samples)
-#     # logarithmic compression
-#     # data = np.log1p(data)
-#     # mags_db = 20*np.log10(yf + EPSILON)
+current_peak = settings.FFT_STARTING_PEAK
 
 
-#     bands = map_fft_to_log_bands(
-#         data,
-#         fs=sample_rate,
-#         N=settings.FFT_WINDOW_SIZE,
-#         band_centers=notes.piano_frequencies
-#     )
-
-#     bands = fft.filter_peaks(bands)
-
-#     # peak tracking
-#     current_peak = max(bands.max(), current_peak * settings.FFT_PEAK_DECAY)
-
-#     # normalize
-#     normalized = bands / (current_peak + EPSILON)
-
-#     # noise gate
-#     normalized[normalized < settings.FFT_NOISE_GATE] = 0
-
-#     # map to 255
-#     normalized = np.clip(normalized * 255, 0, 255).astype(np.uint8)
-
-
-
-def map_fft_to_log_bands(mag, fs, N, band_centers) -> np.ndarray:
+def create_band_map(sample_rate, window_size, band_centers):
     """
     Map FFT magnitudes into logarithmic frequency bands.
 
@@ -70,8 +51,7 @@ def map_fft_to_log_bands(mag, fs, N, band_centers) -> np.ndarray:
     band_values : np.ndarray
         aggregated magnitude per band
     """
-
-    freqs = np.fft.rfftfreq(N, 1/fs)
+    freqs = rfftfreq(window_size, 1/sample_rate)
     band_centers = np.asarray(band_centers)
 
     # --- compute band edges ---
@@ -85,11 +65,23 @@ def map_fft_to_log_bands(mag, fs, N, band_centers) -> np.ndarray:
     edges[0] = band_centers[0]**2 / edges[1]
     edges[-1] = band_centers[-1]**2 / edges[-2]
 
+    return freqs, band_centers, edges
+
+
+fft_freqs, band_centers, band_edges = create_band_map(
+    settings.INPUT_SAMPLE_RATE,
+    settings.FFT_WINDOW_SIZE,
+    notes.piano_frequencies
+)
+
+@Timer(once=True)
+@njit(parallel=True, fastmath=True, cache=True)
+def map_bands(mag) -> np.ndarray:
     # --- aggregate bins ---
     band_values = np.zeros(len(band_centers))
 
-    for i in range(len(band_centers)):
-        mask = (freqs >= edges[i]) & (freqs < edges[i+1])
+    for i in prange(len(band_centers)): # ty: ignore
+        mask = (fft_freqs >= band_edges[i]) & (fft_freqs < band_edges[i+1])
 
         if np.any(mask):
             band_values[i] = mag[mask].mean()
@@ -97,6 +89,31 @@ def map_fft_to_log_bands(mag, fs, N, band_centers) -> np.ndarray:
             band_values[i] = 0
 
     return band_values
+
+def fft_pipeline(new_samples):
+    global current_peak
+    data = update(new_samples)
+
+    # logarithmic compression
+    # data = np.log1p(data)
+    # data = 20*np.log10(data + EPSILON)
+
+    data = map_bands(data)
+
+    data = filter_peaks(data)
+
+    # peak tracking
+    current_peak = max(data.max(), current_peak * settings.FFT_PEAK_DECAY)
+
+    # normalize
+    data = data / (current_peak + EPSILON)
+
+    # noise gate
+    data[data < settings.FFT_NOISE_GATE] = 0
+
+    # map to 255
+    data = np.clip(data * 255, 0, 255).astype(np.uint8)
+    return data
 
 
 def map_to_closest(arr1, arr2):

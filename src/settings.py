@@ -6,7 +6,7 @@ pre_path = '/home/huy/mnt/rpi_zero'
 path_to_assets = pre_path + '/home/pi/repositories/led_strip/assets/'
 
 #-------------------------------------------LED Settings--------------------------------------------
-SIM_BRIGHTNESS	= 50
+SIM_BRIGHTNESS	= 1
 MIN_DITHER      = 0.15
 # GAMMA			= math.e
 GAMMA			= 2.2
@@ -32,3 +32,7 @@ FFT_HOP_SIZE = FFT_WINDOW_SIZE / 4
 FFT_NOISE_GATE = 0.02
 FFT_PEAK_DECAY = 0.995
 FFT_STARTING_PEAK = 10e5
+
+#--------------------------------------------Audio Input--------------------------------------------
+INPUT_SAMPLE_RATE = 48000
+FPS = 120

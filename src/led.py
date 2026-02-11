@@ -1,16 +1,14 @@
-import pstats
-
 import atexit
 
 from rpi_ws281x import PixelStrip
 
-from src import strip as strip_man
 from src import settings
-from src.animations import rainbow, test, music
-from src import profiler
+from src.util import Timer
 
-timer = profiler.Timer('main', combine_results=40)
-timer.enable = False
+with Timer('strip'):
+    from src import strip as strip_man
+
+from src.animations import music, rainbow, test
 
 pixel_strip = PixelStrip(
     settings.LED_COUNT,
@@ -30,6 +28,7 @@ animations = [
 ]
 
 step = 0
+@Timer('minimal loop', 40)
 def minimal():
     global step
     for pos in range(settings.LED_COUNT):
@@ -46,6 +45,7 @@ def minimal():
     pixel_strip.show()
 
 
+@Timer('led loop', 100)
 def normal():
     vstrips = []
     for animation in animations:
@@ -54,13 +54,6 @@ def normal():
         except StopIteration:
             continue
     strip_man.show(pixel_strip, vstrips)
-
-def profiling_stats(pr, name):
-    stats = pstats.Stats(pr)
-    stats.sort_stats(pstats.SortKey.TIME)
-    stats.dump_stats(filename=f'/home/pi/repositories/led_strip/{name}.prof')
-    # stats.print_stats()
-
 
 @atexit.register
 def exit_handler() -> None:
@@ -71,17 +64,9 @@ def run():
     print('Press Ctrl-C to quit.')
 
     while True:
-        timer.start()
-
-        # if step >= 500: return
-
         normal()
-        # minimal()
-        # time.sleep(2/1000)
-        # time.sleep(10/1000)
-
-        timer.end()
         step += 1
+        # if step == 500: break
 
 
 if __name__ == '__main__':

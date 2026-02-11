@@ -1,25 +1,13 @@
-import time
-import math
-
-import numba
-from numba import jit, njit, typed, types
-from numba.typed import List
-from numba.experimental import jitclass
+from numba import njit, types, prange, int16
 import numpy as np
-import numpy.typing as npt
-
-from rpi_ws281x import PixelStrip
 
 from src import settings
-from src.profiler import Timer
-
-timer = Timer('strip', combine_results=100)
-timer.enable = False
+from src.util import Timer
 
 spec = [
-    ('start_led_index', numba.int16),
-    ('led_count', numba.int16),
-    ('strip', types.ListType(types.ListType(numba.int16))),
+    ('start_led_index', int16),
+    ('led_count', int16),
+    ('strip', types.ListType(types.ListType(int16))),
 ]
 
 # @jitclass(spec)
@@ -110,10 +98,10 @@ def adjust_pixel(pixel: list[float], pos, dither_accum):
     if pos == 1 or pos == 3: b = 0
     return round(r), round(g), round(b)
 
-# @timer.dec
-@njit(parallel=True, fastmath=True)
+Timer(once=True)
+@njit(parallel=True, fastmath=True, cache=True)
 def get_pixels(pixels, dither_accum, output_pixels):
-    for pos in numba.prange(settings.LED_COUNT):
+    for pos in prange(settings.LED_COUNT): # ty: ignore
         output_pixels[pos] = adjust_pixel(pixels[pos], pos, dither_accum)
     return output_pixels
 
@@ -128,19 +116,19 @@ output_pixels = np.zeros((settings.LED_COUNT, 3), dtype=np.uint32)
 #     inner_list.append(0)
 #     output_pixels.append(inner_list)
 
-@timer.dec
+# @Timer(None, 100)
 def show(pixel_strip, strips: list[VStrip]):
 
-    # pixels = get_pixels(strips[0].strip, dither_accum, output_pixels)
-    # for i, pix in enumerate(pixels):
-    #     pixel_strip.setPixelColorRGB(i, pix[0], pix[1], pix[2])
+    pixels = get_pixels(strips[0].strip, dither_accum, output_pixels)
+    for i, pix in enumerate(pixels):
+        if i == 1 or i == 3: pix[2] = 0
+        pixel_strip.setPixelColorRGB(i, pix[0], pix[1], pix[2])
 
-
-    for pos in range(settings.LED_COUNT):
-        if len(strips) == 0: break
-        r, g, b = adjust_pixel(strips[0].getPixelColor(pos), pos, dither_accum)
-        if pos == 1 or pos == 3: b = 0
-        pixel_strip.setPixelColorRGB(pos, r, g, b)
+    # for pos in range(settings.LED_COUNT):
+    #     if len(strips) == 0: break
+    #     r, g, b = adjust_pixel(strips[0].getPixelColor(pos), pos, dither_accum)
+    #     if pos == 1 or pos == 3: b = 0
+    #     pixel_strip.setPixelColorRGB(pos, r, g, b)
 
     pixel_strip.show()
 

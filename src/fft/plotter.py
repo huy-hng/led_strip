@@ -7,14 +7,13 @@ import matplotlib
 # matplotlib.use('webagg')
 
 from src.settings import path_to_assets
-from src.profiler import Timer
-timer = Timer('plotter', 1)
+from src.util import Timer
 
 def save_plot(plot, name):
 
     path = path_to_assets + 'fft_output/'
-    plot.show()
-    # plot.savefig(path + name + '.png')
+    # plot.show()
+    plot.savefig(path + name + '.png')
 
 
 def simple_plot(xf, yf, name, fmax=None):
@@ -31,7 +30,7 @@ def simple_plot(xf, yf, name, fmax=None):
     save_plot(plt, name)
     return plt
 
-@timer.dec
+@Timer()
 def spectrogram(times, freqs, S_db, name, fmax=None, fmin=None):
 
     plt.figure(figsize=(10, 6))

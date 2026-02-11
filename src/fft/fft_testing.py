@@ -11,8 +11,8 @@ from scipy.signal import find_peaks
 from src import settings
 from src.settings import EPSILON, path_to_assets
 from src.fft import plotter, fft, notes
-from src.profiler import Timer
-timer = Timer('fft', 1)
+from src.util import Timer
+from src.audio_input import start_stream
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -118,7 +118,7 @@ def looper(sample_rate, audio, wait=True):
 
 
 
-@timer.dec
+@Timer()
 def banding(sample_rate, audio):
     num_windows = math.ceil(len(audio)/settings.FFT_HOP_SIZE)
 
@@ -133,37 +133,38 @@ def banding(sample_rate, audio):
     return times, notes.piano_frequencies, bands_history
 
 
-@timer.dec
-def create_spectrogram(sample_rate, audio, len_frequencies):
-    num_windows = math.ceil(len(audio)/settings.FFT_HOP_SIZE)
+@Timer()
+def create_spectrogram(len_frequencies):
+    seconds_to_record = 4
+    samples_to_record = seconds_to_record * settings.INPUT_SAMPLE_RATE
+    num_windows = math.ceil(samples_to_record/settings.FFT_HOP_SIZE)
 
     history = np.zeros((num_windows, len_frequencies))
 
-    for i, yf in enumerate(looper(sample_rate, audio, wait=False)):
+    for i, yf in enumerate(start_stream(fft.fft_pipeline)):
+    # for i, yf in enumerate(looper(settings.INPUT_SAMPLE_RATE, audio, wait=False)):
         history[i] = yf
+        if i == num_windows: break
 
     history = np.swapaxes(history, 0, 1)
 
-    times = [(settings.FFT_HOP_SIZE / sample_rate) * i for i in range(num_windows)]
+    times = [(settings.FFT_HOP_SIZE / settings.INPUT_SAMPLE_RATE) * i for i in range(num_windows)]
     return times, history
 
 
-sample_rate, audio = get_audio()
-def get_mock_audio():
-    return looper(sample_rate, audio)
+# sample_rate, audio = get_audio()
+# def get_mock_audio():
+#     return looper(sample_rate, audio)
 
 
 def test():
-    fmax = 3000
-    fmin = 100
+    frequencies = notes.get_frequency_list()
+    fmax = frequencies[-4]
+    fmin = frequencies[12]
 
-    print(1)
-    xf = rfftfreq(settings.FFT_WINDOW_SIZE, 1 / sample_rate)
-    print(2)
-    times, history = create_spectrogram(sample_rate, audio, len(xf))
-    print(3)
-    plotter.spectrogram(times, xf, history, f'spectrogram_normal', fmax=fmax, fmin=fmin)
-    print(4)
+    xf = rfftfreq(settings.FFT_WINDOW_SIZE, 1 / settings.INPUT_SAMPLE_RATE)
+    times, history = create_spectrogram(len(xf))
+    plotter.spectrogram(times, xf, history, 'spectrogram_normal', fmax=fmax, fmin=fmin)
 
     # data = banding(sample_rate, audio)
     # plotter.spectrogram(*data, f'spectogram_compression', fmax=fmax, fmin=fmin)

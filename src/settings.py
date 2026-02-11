@@ -1,9 +1,15 @@
-import math
 from rpi_ws281x import ws
+import subprocess
 
 EPSILON = 1e-12
-pre_path = '/home/huy/mnt/rpi_zero'
-path_to_assets = pre_path + '/home/pi/repositories/led_strip/assets/'
+
+result = subprocess.run(['hostname'], capture_output=True)
+hostname = result.stdout.decode('utf-8').rstrip()
+
+if hostname == 'nixos':
+    project_path = '/home/huy/mnt/rpi_zero/home/pi/repositories/led_strip'
+else:
+    project_path = '/home/pi/repositories/led_strip'
 
 #-------------------------------------------LED Settings--------------------------------------------
 SIM_BRIGHTNESS	= 1
@@ -28,6 +34,7 @@ LED_STRIP		= ws.WS2812_STRIP
 #-------------------------------------------FFT Settings--------------------------------------------
 
 FFT_WINDOW_SIZE = 1024
+# FFT_HOP_SIZE = 256
 FFT_HOP_SIZE = FFT_WINDOW_SIZE / 4
 FFT_NOISE_GATE = 0.02
 FFT_PEAK_DECAY = 0.995
@@ -35,4 +42,5 @@ FFT_STARTING_PEAK = 10e5
 
 #--------------------------------------------Audio Input--------------------------------------------
 INPUT_SAMPLE_RATE = 48000
-FPS = 120
+# OUTPUT_SAMPLE_RATE = 24000
+FPS = 60

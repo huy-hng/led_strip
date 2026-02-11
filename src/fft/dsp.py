@@ -6,17 +6,16 @@ from numba import njit, prange
 import numpy as np
 from scipy.fft import rfft, rfftfreq
 
-with Timer('find_peaks'):
-    from scipy.signal import find_peaks
+from scipy.signal import find_peaks
 
 
 from src.fft import notes
 from src import settings
 from src.settings import EPSILON
 
-def create_updater(window_size=settings.FFT_WINDOW_SIZE):
+def create_fft(window_size=settings.FFT_WINDOW_SIZE):
     buffer = np.zeros(window_size)
-    def update(new_samples):
+    def fft(new_samples):
         nonlocal buffer
         buffer = np.roll(buffer, -len(new_samples))
         buffer[-len(new_samples):] = new_samples
@@ -24,9 +23,9 @@ def create_updater(window_size=settings.FFT_WINDOW_SIZE):
         yf = rfft(buffer)
 
         return np.abs(yf)
-    return update
+    return fft
 
-update = create_updater()
+fft = create_fft()
 
 current_peak = settings.FFT_STARTING_PEAK
 
@@ -75,7 +74,7 @@ fft_freqs, band_centers, band_edges = create_band_map(
 )
 
 @Timer(once=True)
-@njit(parallel=True, fastmath=True, cache=True)
+# @njit(parallel=True, fastmath=True, cache=True)
 def map_bands(mag) -> np.ndarray:
     # --- aggregate bins ---
     band_values = np.zeros(len(band_centers))
@@ -92,29 +91,22 @@ def map_bands(mag) -> np.ndarray:
 
 def fft_pipeline(new_samples):
     global current_peak
-    data = update(new_samples)
+    data = fft(new_samples)
 
     # logarithmic compression
     # data = np.log1p(data)
     # data = 20*np.log10(data + EPSILON)
 
-    data = map_bands(data)
+    # data = map_bands(data)
 
-    data = filter_peaks(data)
+    # data = filter_peaks(data)
 
-    # peak tracking
-    current_peak = max(data.max(), current_peak * settings.FFT_PEAK_DECAY)
+    # current_peak = max(data.max(), current_peak * settings.FFT_PEAK_DECAY) # peak tracking
+    # data = data / (current_peak + EPSILON) # normalize
+    # data[data < settings.FFT_NOISE_GATE] = 0 # noise gate
+    # data = np.clip(data * 255, 0, 255).astype(np.uint8) # map to 255
 
-    # normalize
-    data = data / (current_peak + EPSILON)
-
-    # noise gate
-    data[data < settings.FFT_NOISE_GATE] = 0
-
-    # map to 255
-    data = np.clip(data * 255, 0, 255).astype(np.uint8)
     return data
-
 
 def map_to_closest(arr1, arr2):
     indices = []
@@ -144,7 +136,7 @@ def filter_by_notes(yf, xf):
     for i, f in enumerate(frequencies):
         start = -int(f[1]/region_factor) + f[0]
         end = int(f[1]/region_factor) + f[0]
-        transformed[i] = sum(yf[start:end]) # type: ignore
+        transformed[i] = sum(yf[start:end])
 
     transformed *= 255 / transformed.max()
 

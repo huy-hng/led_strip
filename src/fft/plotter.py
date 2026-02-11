@@ -6,14 +6,12 @@ import matplotlib
 # matplotlib.use('tkagg')
 # matplotlib.use('webagg')
 
-from src.settings import path_to_assets
+from src.settings import project_path
 from src.util import Timer
 
 def save_plot(plot, name):
-
-    path = path_to_assets + 'fft_output/'
+    plot.savefig(f'{project_path}/assets/fft_output/{name}.png')
     # plot.show()
-    plot.savefig(path + name + '.png')
 
 
 def simple_plot(xf, yf, name, fmax=None):
@@ -30,10 +28,11 @@ def simple_plot(xf, yf, name, fmax=None):
     save_plot(plt, name)
     return plt
 
-@Timer()
+# @Timer('spectrogram')
 def spectrogram(times, freqs, S_db, name, fmax=None, fmin=None):
 
-    plt.figure(figsize=(10, 6))
+    plt.style.use('dark_background')
+    plt.figure(figsize=(10, 6), facecolor='black')
 
     plt.pcolormesh(
         times,
@@ -60,7 +59,7 @@ def spectrogram(times, freqs, S_db, name, fmax=None, fmin=None):
 def multiple_spectrogram(data, fname='spectrogram', fmax=None):
     # plt.figure(figsize=(20, 20))
 
-    plt.title("Spectrogram")
+    plt.title('Spectrogram')
     # plt.colorbar(label="Magnitude (dB)")
 
     # subplots = []

@@ -9,8 +9,8 @@ from scipy.fft import rfftfreq
 from scipy.signal import find_peaks
 
 from src import settings
-from src.settings import EPSILON, path_to_assets
-from src.fft import plotter, fft, notes
+from src.settings import EPSILON, project_path
+from src.fft import plotter, dsp, notes
 from src.util import Timer
 from src.audio_input import start_stream
 
@@ -25,7 +25,7 @@ np.set_printoptions(threshold=sys.maxsize)
 # [370, 466,           494,          740, 932]
 
 def get_audio():
-    audio_file = path_to_assets + 'BotW - Item.wav'
+    audio_file = f'{project_path}/assets/BotW - Item.wav'
     # audio_file = 'Frederic_Chopin_-_Nocturne_Eb_major_Opus_9,_number_2.wav'
 
     sample_rate, wav = wavfile.read(audio_file)
@@ -86,21 +86,21 @@ def looper(sample_rate, audio, wait=True):
             if not wait: return
             return np.zeros(settings.LED_COUNT)
 
-        yf = fft.update(new_samples)
+        yf = dsp.fft(new_samples)
 
         # logarithmic compression
         # yf = np.log1p(yf)
         # # mags_db = 20*np.log10(yf + EPSILON)
 
 
-        # bands = fft.map_fft_to_log_bands(
+        # bands = dsp.map_fft_to_log_bands(
         #     yf,
         #     fs=sample_rate,
         #     N=settings.FFT_WINDOW_SIZE,
         #     band_centers=notes.piano_frequencies
         # )
 
-        # bands = fft.filter_peaks(bands)
+        # bands = dsp.filter_peaks(bands)
 
         # # peak tracking
         # current_peak = max(bands.max(), current_peak * settings.FFT_PEAK_DECAY)
@@ -133,18 +133,16 @@ def banding(sample_rate, audio):
     return times, notes.piano_frequencies, bands_history
 
 
-@Timer()
-def create_spectrogram(len_frequencies):
-    seconds_to_record = 4
-    samples_to_record = seconds_to_record * settings.INPUT_SAMPLE_RATE
+@Timer('create_spectrogram')
+def create_spectrogram(len_frequencies, samples_to_record):
     num_windows = math.ceil(samples_to_record/settings.FFT_HOP_SIZE)
 
     history = np.zeros((num_windows, len_frequencies))
 
-    for i, yf in enumerate(start_stream(fft.fft_pipeline)):
+    for i, yf in enumerate(start_stream(dsp.fft_pipeline)):
     # for i, yf in enumerate(looper(settings.INPUT_SAMPLE_RATE, audio, wait=False)):
-        history[i] = yf
         if i == num_windows: break
+        history[i] = yf
 
     history = np.swapaxes(history, 0, 1)
 
@@ -159,12 +157,19 @@ def create_spectrogram(len_frequencies):
 
 def test():
     frequencies = notes.get_frequency_list()
-    fmax = frequencies[-4]
-    fmin = frequencies[12]
+    fmin = frequencies[0]
+    fmax = frequencies[-1]
+    # fmin = 0
+    # fmax = 8000
+
+    seconds_to_record = 2
+    samples_to_record = seconds_to_record * settings.INPUT_SAMPLE_RATE
+
 
     xf = rfftfreq(settings.FFT_WINDOW_SIZE, 1 / settings.INPUT_SAMPLE_RATE)
-    times, history = create_spectrogram(len(xf))
-    plotter.spectrogram(times, xf, history, 'spectrogram_normal', fmax=fmax, fmin=fmin)
+    # xf = frequencies
+    times, history = create_spectrogram(len(xf), samples_to_record)
+    plotter.spectrogram(times, xf, history, 'fpb=64', fmax=fmax, fmin=fmin)
 
     # data = banding(sample_rate, audio)
     # plotter.spectrogram(*data, f'spectogram_compression', fmax=fmax, fmin=fmin)

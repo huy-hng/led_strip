@@ -3,7 +3,7 @@ import numpy as np
 from src.util import Timer
 from src.strip import VStrip
 
-from src.fft.fft import fft_pipeline
+from src.fft.dsp import fft_pipeline
 from src.fft.notes import get_frequency_list
 from src.audio_input import start_stream
 

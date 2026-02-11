@@ -2,26 +2,6 @@ import time
 from functools import wraps
 from contextlib import ContextDecorator
 
-class Timer:
-    timers: dict = {}
-    def __new__(cls, name=None, average_results=1, once=False) -> _Timer:
-        if name in cls.timers:
-            return cls.timers[name]
-
-        timer = _Timer(name, average_results, once)
-
-        if name is None or name == '':
-            name = timer.name
-
-        cls.timers[name] = timer
-
-        return timer
-
-    def __enter__(self): ...
-    def __exit__(self, *exc): ...
-    def __call__(self, name): ...
-
-
 class _Timer(ContextDecorator):
     name: str | None
     # time_between_prints: float = 0
@@ -30,13 +10,15 @@ class _Timer(ContextDecorator):
     start_time: float
     step: int = 0
     combined_time: float = 0
+    callback = None
 
     def _recreate_cm(self):
         return self
 
     def __call__(self, func):
-        if self.name is None or self.name == '':
-            self.name = func.__name__
+        if self.callback is not None:
+            self.callback(func.__name__, self)
+
         @wraps(func)
         def inner(*args, **kwds):
             with self._recreate_cm():
@@ -78,7 +60,32 @@ class _Timer(ContextDecorator):
         name = ''
         if self.name is not None:
             name = f'{self.name}: '
-        print(f'{name}{time_taken:.2f}{unit}')
+        print(f'{name}{time_taken:.2f}{unit} on average for {self.step} steps')
+
+class Timer:
+    timers: dict = {}
+    def __new__(cls, name=None, average_results=1, once=False) -> _Timer:
+        if name in cls.timers:
+            return cls.timers[name]
+
+        timer = _Timer(name, average_results, once)
+
+        if name is None or name == '':
+            timer.callback = cls.save_timer
+            return timer
+
+        cls.timers[name] = timer
+
+        return timer
+
+    @classmethod
+    def save_timer(cls, name, timer):
+        cls.timers[name] = timer
+
+    def __enter__(self): ...
+    def __exit__(self, *exc): ...
+    def __call__(self, name): ...
+
 
 if __name__ == '__main__':
     loops = 10
@@ -88,10 +95,15 @@ if __name__ == '__main__':
     def test_fn():
         time.sleep(0.001)
 
-    start = time.perf_counter()
-    for _ in range(loops):
-        test_fn()
-        with Timer('with', average):
-            time.sleep(0.002)
+    @Timer()
+    def test_fn1():
+        time.sleep(0.001)
 
-    print(f'actual time: {(time.perf_counter()-start)/loops*1000:.2f}ms')
+    print(Timer.__dict__)
+    # start = time.perf_counter()
+    # for _ in range(loops):
+    #     test_fn()
+    #     with Timer('with', average):
+    #         time.sleep(0.002)
+
+    # print(f'actual time: {(time.perf_counter()-start)/loops*1000:.2f}ms')

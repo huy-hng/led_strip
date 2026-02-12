@@ -12,6 +12,10 @@ pkgs.mkShell {
 
 		xorg.libX11 # for matplotlib
 
+		# $(nix path-info nixpkgs#libuv)/lib
+		libuv
+		libudev-zero
+
 		# glib
 		# libGL
 		# fontconfig

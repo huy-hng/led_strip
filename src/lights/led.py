@@ -1,13 +1,11 @@
 import atexit
 
-from rpi_ws281x import PixelStrip
+from src.lights.ws2812_api import PixelStrip
 
 from src import settings
 from src.util import Timer
-
-from src import strip as strip_man
-
-from src.animations import music, rainbow, test
+from src.lights import strip as strip_man
+from src.lights.animations import music, rainbow, test
 
 pixel_strip = PixelStrip(
     settings.LED_COUNT,

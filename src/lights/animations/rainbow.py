@@ -2,7 +2,7 @@ import time
 import colorsys
 
 from src import settings
-from src.strip import VStrip
+from src.lights.strip import VStrip
 
 def hsv_to_rgb(h, s, v):
     r, g, b = colorsys.hsv_to_rgb(h, s, v)

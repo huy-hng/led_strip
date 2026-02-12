@@ -1,8 +1,7 @@
 import time
 import numpy as np
 
-from src.util import Timer
-from src.strip import VStrip
+from src.lights.vstrip import VStrip
 
 from src.fft.dsp import fft_pipeline
 from src.audio_input import start_stream
@@ -17,13 +16,11 @@ def create_valid_strip_from_values(values, size):
     values = np.append(values, alpha_channel, axis=1)
     return values
 
-
 def temporal_smoothing(prev, current):
     return settings.AUDIO_SMOOTHING * prev + (1 - settings.AUDIO_SMOOTHING) * current
 
 def instant_attack_smoothing(prev, current):
     return np.where(current > prev, current, prev * settings.AUDIO_SMOOTHING)
-
 
 def create(led_count: int):
     strip = VStrip(led_count)

@@ -9,7 +9,7 @@ def test_fft():
     fft_testing.test()
 
 def lights():
-    from src.lights.led import run
+    from src.lights.main import run
     run()
 
 def test_lights():

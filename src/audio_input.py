@@ -6,10 +6,6 @@ from src.fft.dsp import fft_pipeline
 from src import settings
 from src.util import Timer
 
-p = PyAudio()
-print('---------------------------------------------------------------------------------')
-
-
 stream: PyAudio.Stream
 
 def stream_callback(callback):
@@ -30,6 +26,10 @@ def stream_callback(callback):
 
 def start_stream(callback) -> PyAudio.Stream:
     global stream
+
+    p = PyAudio()
+    print('---------------------------------------------------------------------------------')
+
     # frames_per_buffer = int(settings.INPUT_SAMPLE_RATE / settings.FPS)
     frames_per_buffer = int(settings.FFT_HOP_SIZE)
 

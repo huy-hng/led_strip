@@ -1,5 +1,5 @@
 from src import settings
-from src.strip import VStrip
+from src.lights.vstrip import VStrip
 
 def create(led_count: int):
     strip = VStrip(led_count)

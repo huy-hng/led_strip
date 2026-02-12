@@ -4,6 +4,8 @@ from contextlib import ContextDecorator
 from typing import Literal
 from dataclasses import dataclass
 
+from src import global_variables as globals
+
 def get_time_unit(time_taken):
     unit = 's'
     if time_taken < 1:
@@ -11,6 +13,9 @@ def get_time_unit(time_taken):
         unit = 'ms'
     return time_taken, unit
 
+def print_every_x_times(msg, x=1):
+    if globals.step % x == 0:
+        print(msg)
 
 @dataclass
 class _Timer(ContextDecorator):
@@ -84,8 +89,6 @@ class _Timer(ContextDecorator):
         if self.name is not None:
             name = f'{self.name}: '
         print(f'{name}{time_taken:.2f}{unit} (cum: {total_time:.2f}{total_unit})')
-
-
 
 class Timer:
     timers: dict = {}

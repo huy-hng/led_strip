@@ -70,7 +70,7 @@
 					# cmake . -DPICO_BOARD=pico2_w -DPICO_PLATFORM=rp2350 -DCMAKE_BUILD_TYPE=Release -G Ninja
 					# cd build; cmake ..   -DPICO_BOARD=pico2_w   -DPICO_PLATFORM=rp2350   -DCMAKE_BUILD_TYPE=Release -G Ninja
 					echo $out
-				'';
+					'';
 
 			};
 

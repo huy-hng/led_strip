@@ -1,0 +1,12 @@
+CompileFlags:
+  Add:
+    # - -Wno-unknown-warning-option
+    - --target=arm-none-eabi
+    # - --sysroot=/path/to/your/sysroot
+  Remove: [-m*, -f*, -W*]
+  # CompilationDatabase: .
+  Compiler: arm-none-eabi-gcc
+Index:
+  Background: Build
+  External:
+    File: ./.cache/clangd/index

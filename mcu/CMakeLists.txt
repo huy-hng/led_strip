@@ -9,7 +9,10 @@ project(pico2w_minimal C CXX ASM)
 
 pico_sdk_init()
 
-add_executable(pico2w_minimal src/main.c)
+add_executable(pico2w_minimal
+	src/main.cpp
+	src/dma.cpp
+)
 
 if (PICO_CYW43_SUPPORTED)
 	target_link_libraries(pico2w_minimal pico_cyw43_arch_none)

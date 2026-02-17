@@ -1,10 +1,10 @@
-#include <wchar.h>
 #include <stdio.h>
 #include <pico/time.h>
 #include "hardware/adc.h"
 #include "pico/stdlib.h"
 
 #include "pins.h"
+#include "dma.h"
 
 // uint32_t bar[] = {0x258F, 0x258E, 0x258D, 0x258C, 0x258B, 0x258A, 0x2589, 0x2588};
 
@@ -52,13 +52,16 @@ void init() {
     adc_gpio_init(26);   // GPIO26 = ADC0
     adc_select_input(0);
 	
+	init_dma();
 }
 
 void loop() {
-	uint16_t result = adc_read();
+	// uint16_t result = adc_read();
 	// float voltage = result * 3.3f / 4095.0f;
 	// printf("ADC: \t %d \t Voltage: %.2f\n", result, voltage);
-	print_volume(result);
+	if (frame_ready)
+		printf("new frame");
+		// print_volume();
 
 	sleep_ms(20);
 }

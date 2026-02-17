@@ -1,5 +1,7 @@
 __pycache__/
 .venv*
 .venv_pc
+.cache
 *.prof
 fft_output/
+build/

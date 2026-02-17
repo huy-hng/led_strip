@@ -10,9 +10,9 @@ void setup() {
 }
 
 void loop() {
-	val = analogRead(ANALOG_PIN);  // read the input pin
+	// val = analogRead(ANALOG_PIN);  // read the input pin
 	// Serial.println(val);
-	analogWrite(LED_PIN, val / 4); // analogRead values go from 0 to 1023, analogWrite values from 0 to 255
-	// analogWrite(LED_PIN, 20); // analogRead values go from 0 to 1023, analogWrite values from 0 to 255
+  analogWrite(LED_PIN, 5); // analogRead values go from 0 to 1023, analogWrite values from 0 to 255
+	// analogWrite(LED_PIN, val / 4); // analogRead values go from 0 to 1023, analogWrite values from 0 to 255
 	delay(50);
 }

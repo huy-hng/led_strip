@@ -6,9 +6,7 @@ project(blink C CXX ASM)
 # set(CMAKE_C_STANDARD "/run/current-system/sw/bin/gcc")
 # set(CMAKE_CXX_STANDARD "/run/current-system/sw/bin/g++")
 
-add_executable(blink
-    blink.c
-    )
+add_executable(blink blink.c)
 
 pico_sdk_init()
 

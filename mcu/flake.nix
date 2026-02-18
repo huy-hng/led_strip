@@ -30,15 +30,18 @@
 				pkgs.git
 				pkgs.cmake
 				pkgs.ninja
-				# pkgs.gcc
 				pkgs.pkg-config
 				pkgs.python3
 				pkgs.python3Packages.pip
 				pkgs.unzip
-				pkgs.gcc-arm-embedded
 				pkgs.openocd
 				pkgs.picotool
-				# (pkgs.pico-sdk.override { withSubmodules = true; })
+
+				pkgs.gcc-arm-embedded
+				pkgs.clang
+				pkgs.clang-tools
+
+				# (pico-sdk.override { withSubmodules = true; })
 			];
 
 		in {

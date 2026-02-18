@@ -9,16 +9,7 @@
 		let
 			system = "x86_64-linux";
 			pkgs = nixpkgs.legacyPackages.${system};
-			PICO_TOOLCHAIN_PREFIX = "arm-none-eabi-";
-
-			# picoSdk = pkgs.fetchFromGitHub {
-			# 	owner = "raspberrypi";
-			# 	repo = "pico-sdk";
-			# 	rev = "master";  # pin a release tag for stability if needed
-			# 	fetchSubmodules = true;
-			# 	# run nix flake prefetch github:raspberrypi/pico-sdk to get the sha
-			# 	sha256 = "sha256-hQdEZD84/cnLSzP5Xr9vbOGROQz4BjeVOnvbyhe6rfM="; # replace with nix-prefetch-git
-			# };
+			# PICO_TOOLCHAIN_PREFIX = "arm-none-eabi-";
 
 			picoSdk = builtins.fetchGit {
 				url = "https://github.com/raspberrypi/pico-sdk.git";
@@ -28,16 +19,20 @@
 
 			commonInputs = [
 				pkgs.git
-				pkgs.cmake
-				pkgs.ninja
 				pkgs.pkg-config
 				pkgs.python3
 				pkgs.python3Packages.pip
 				pkgs.unzip
 				pkgs.openocd
+
+			];
+
+			pico_inputs = [
+				pkgs.gcc-arm-embedded
+				pkgs.cmake
+				pkgs.ninja
 				pkgs.picotool
 
-				pkgs.gcc-arm-embedded
 				pkgs.clang
 				pkgs.clang-tools
 
@@ -47,10 +42,12 @@
 		in {
 
 			devShells.${system}.default = pkgs.mkShell {
-				buildInputs = commonInputs;
+				buildInputs = pico_inputs;
 
 				PICO_SDK_PATH = picoSdk;
+				
 				PATH = "$PATH:${pkgs.gcc-arm-embedded}/bin";
+
 				# CC = "${PICO_TOOLCHAIN_PREFIX}gcc";
 				# CXX = "${PICO_TOOLCHAIN_PREFIX}g++";
 				# AS = "${PICO_TOOLCHAIN_PREFIX}gcc";
@@ -62,7 +59,6 @@
 				# STRIP = "${PICO_TOOLCHAIN_PREFIX}strip";
 
 				# shellHook = ''
-				# 	echo "Pico 2 W SDK flake environment loaded!"
 				# '';
 
 

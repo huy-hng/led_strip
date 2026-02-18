@@ -15,6 +15,14 @@ add_executable(pico2w_led
 	src/util.cpp
 	src/visualizer.cpp
 	src/adc.cpp
+	src/dsp.cpp
+)
+
+target_compile_options(pico2w_led PRIVATE
+    -mcpu=cortex-m33
+    -mfpu=fpv5-sp-d16
+    -mfloat-abi=hard
+    -O3
 )
 
 if (PICO_CYW43_SUPPORTED)
@@ -24,7 +32,10 @@ endif()
 target_link_libraries(pico2w_led
 	pico_stdlib
 	hardware_adc
+    CMSISDSP
 )
+
+add_subdirectory(lib/CMSIS-DSP)
 
 pico_enable_stdio_usb(pico2w_led 1)
 pico_enable_stdio_uart(pico2w_led 0)

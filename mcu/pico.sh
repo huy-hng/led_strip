@@ -1,107 +1,91 @@
 port="/dev/ttyACM0"
-
 project_path="/home/huy/repositories/led_strip/mcu"
 
-build_cmd="cmake -B ${project_path}/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -G Ninja"
-compile_cmd="ninja -C ${project_path}/build"
-
-
-sudo chmod o+rw $port
-
-cd ${project_path}
+print_header() {
+	echo
+	echo "----------------$1----------------"
+	echo
+}
 
 build() {
-	echo
-	echo '----------------Building----------------'
-	echo
-	
-	if [[ ${IN_NIX_SHELL} == "impure" ]]; then
-		nix develop --command ${build_cmd}
-	else
-		build_cmd
+	print_header "Building"
+
+	if $rm_build; then
+		echo ======== Removing Build Directory ========
+		rm -rf ${project_path}/build
 	fi
+	
+	cmake -B ${project_path}/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -G Ninja
 }
 
 compile() {
-	echo
-	echo '----------------Compiling----------------'
-	echo
-	
-	if [[ ${IN_NIX_SHELL} == "impure" ]]; then
-		nix develop --command ${compile_cmd}
-	else
-		compile_cmd
-	fi
+	print_header "Compiling"
+	ninja -C ${project_path}/build
+	# if [[ ${IN_NIX_SHELL} == "impure" ]]; then
+	# 	nix develop --command "${compile_cmd}"
 }
 
 upload() {
-	echo
-	echo '----------------Uploading----------------'
-	echo
+	print_header "Uploading"
 	sudo picotool load -f ${project_path}/build/pico2w_minimal.uf2
-	$upload_cmd
-	echo
 }
 
 reboot() {
-	echo
-	echo '----------------Rebooting----------------'
-	echo
-	sudo chmod o+rw $port
-	if [[ $? == 0 ]]; then
-		exit 1
-	fi
+	print_header "Rebooting"
 	sudo picotool reboot -f
 }
 
 monitor() {
-	echo
-	echo '----------------Start Monitor----------------'
-	echo
-	sudo chmod o+rw $port
-	if [[ $? == 0 ]]; then
-		exit 1
-	fi
-	arduino-cli monitor -p /dev/ttyACM0 --config 115200;
+	print_header "Start Monitor"
+	sudo arduino-cli monitor -p /dev/ttyACM0 --config 115200;
 }
 
-bcum() {
-	build
-	if [[ $? == 0 ]]; then
-		exit 1
-	fi
-	cum
-}
+declare -A commands=([b]=build [c]=compile [u]=upload [r]=reboot [m]=monitor)
 
-cum() {
-	cu
-	if [[ $? == 0 ]]; then
-		exit 1
+execute_commands() {
+	if declare -f "$1" > /dev/null; then
+		"$@"
+		exit 0
 	fi
-	monitor
-}
 
-cu() {
-	compile
-	if [[ $? == 0 ]]; then
-		exit 1
-	fi
-	upload
+	string=$1
+	length=${#string}
+	for ((i = 0; i < length; i++)); do
+		char="${string:i:1}"
+		$"${commands[$char]}"
+
+		if [[ $? != 0 ]] && [[ $char != "r" ]]; then
+			exit 1
+		fi
+	done
 }
 
 
-if [ $# -eq 0 ]; then
-	bcum
-	exit 0
-elif declare -f "$1" > /dev/null; then
-	if [[ $2 == '-r' ]]; then
-		echo ========================= removing build directory =========================
-		rm -rf ${project_path}/build
-	fi
+command=$1
+shift
 
-	"$@"
+# set_flags
+rm_build=false
+while getopts 'r' flag; do
+	case "${flag}" in
+		r) rm_build=true ;;
+		*) print_usage
+			exit 1 ;;
+	esac
+done
+
+cd ${project_path}
+
+# if [ $command -eq 0 ]; then
+# 	bcum
+# 	exit 0
+if declare -f $command > /dev/null; then
+	# "$@"
+	$command
 	exit 0
 else
-	echo "'$1' is not a known function name" >&2
-	exit 1
+	execute_commands $command
+	exit 0
 fi
+
+exit 1

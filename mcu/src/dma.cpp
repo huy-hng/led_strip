@@ -3,33 +3,60 @@ extern "C" {
 #include "hardware/adc.h"
 }
 
-#include "dma.h"
-
-uint8_t frame_a[FRAME_SIZE];
-uint8_t frame_b[FRAME_SIZE];
+#include "../include/dma.h"
+#include "../include/util.h"
+#include "../include/pins.h"
 
 int dma_chan;
+volatile uint16_t adc_buffer[ADC_BUF_LEN];
+volatile uint16_t *adc_buffer_view;
+volatile bool adc_buffer_ready = false;
 
 void dma_handler() {
 	dma_hw->ints0 = 1u << dma_chan;
-	frame_ready = true;
 
-	dma_buf = (dma_buf == frame_a) ? frame_b : frame_a;
-	dma_channel_set_write_addr(dma_chan, dma_buf, true);
+	// static uint8_t pointer = 0;
+	// pointer = pointer++ % (ADC_BUF_LEN / FFT_HOP_SIZE);
+
+	// if (half) {
+	// 	adc_buffer_ready = true;
+	// 	adc_buffer_view = &adc_buffer[0];
+	// } else {
+	// 	adc_buffer_ready = true;
+	// 	adc_buffer_view = &adc_buffer[ADC_BUF_LEN / 2];
+	// }
+
+	// restart DMA manually if transfer count is zero
+	if (!dma_channel_is_busy(dma_chan)) {
+		dma_channel_set_read_addr(dma_chan, &adc_hw->fifo, false);
+		dma_channel_set_write_addr(dma_chan, adc_buffer, false);
+		dma_channel_set_trans_count(dma_chan, ADC_BUF_LEN, true);
+	}
+
 }
 
-void ini_dma() {
-    dma_chan = dma_claim_unused_channel(true);
-    dma_channel_config cfg = dma_channel_get_default_config(dma_chan);
-    channel_config_set_transfer_data_size(&cfg, DMA_SIZE_8);
-    channel_config_set_read_increment(&cfg, false);
-    channel_config_set_write_increment(&cfg, true);
-    // channel_config_set_dreq(&cfg, spi_get_dreq(SPI_PORT, false)); // RX
+void init_dma() {
+	dma_chan = dma_claim_unused_channel(true);
+	dma_channel_config cfg = dma_channel_get_default_config(dma_chan);
+
+	channel_config_set_transfer_data_size(&cfg, DMA_SIZE_16);
+	channel_config_set_read_increment(&cfg, false); // false → always read from ADC FIFO
+	channel_config_set_write_increment(&cfg, true); // true → fill buffer sequentially
+	channel_config_set_dreq(&cfg, DREQ_ADC);		// DREQ_ADC → trigger when ADC FIFO has data
+
+	channel_config_set_ring(&cfg,
+							true, // Write address wraps
+							ADC_BUF_EXPONENT);
 	
-    dma_channel_configure(dma_chan, &cfg, dma_buf, adc_read, FRAME_SIZE, false);
+	// channel_config_set_chain_to(&cfg, dma_chan); // chain to self to prevent stopping
+
+	dma_channel_configure(dma_chan, &cfg,
+						  adc_buffer,	 // Destination
+						  &adc_hw->fifo, // Source
+						  FFT_HOP_SIZE,	 // Number of transfers
+						  true);		 // Start immediately
+
 	dma_channel_set_irq0_enabled(dma_chan, true);
 	irq_set_exclusive_handler(DMA_IRQ_0, dma_handler);
 	irq_set_enabled(DMA_IRQ_0, true);
-
-	dma_channel_start(dma_chan);
 }

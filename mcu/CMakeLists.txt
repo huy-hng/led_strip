@@ -12,6 +12,9 @@ pico_sdk_init()
 add_executable(pico2w_minimal
 	src/main.cpp
 	src/dma.cpp
+	src/util.cpp
+	src/visualizer.cpp
+	src/adc.cpp
 )
 
 if (PICO_CYW43_SUPPORTED)

@@ -1,14 +1,10 @@
 CompileFlags:
-  # Compiler: /nix/store/zl327dqnvg3ynlpdhpphm1cppassbnq4-gcc-arm-embedded-14.3.rel1/bin/arm-none-eabi-gcc
   Add:
     - -stdlib=libstdc++
     - -isystem
     - /nix/store/zl327dqnvg3ynlpdhpphm1cppassbnq4-gcc-arm-embedded-14.3.rel1/arm-none-eabi/include/c++/14.3.1/arm-none-eabi
-    # - --sysroot=/nix/store/xixg6bjakn3ymzc3qs0c6nd0ymwav6ha-gcc-arm-embedded-*/arm-none-eabi
-    # - --sysroot=/nix/store/zl327dqnvg3ynlpdhpphm1cppassbnq4-gcc-arm-embedded-14.3.rel1/bin/
   Remove: [-m*, -f*, -W*]
-
-  # CompilationDatabase: .
+  CompilationDatabase: .
 Index:
   Background: Build
   External:

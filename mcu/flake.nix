@@ -17,7 +17,7 @@
 				submodules = true;
 			};
 
-			commonInputs = [
+			python_inputs = [
 				pkgs.git
 				pkgs.pkg-config
 				pkgs.python3
@@ -32,11 +32,10 @@
 				pkgs.cmake
 				pkgs.ninja
 				pkgs.picotool
+				# (pico-sdk.override { withSubmodules = true; })
 
 				pkgs.clang
 				pkgs.clang-tools
-
-				# (pico-sdk.override { withSubmodules = true; })
 			];
 
 		in {
@@ -58,8 +57,9 @@
 				# OBJDUMP = "${PICO_TOOLCHAIN_PREFIX}objdump";
 				# STRIP = "${PICO_TOOLCHAIN_PREFIX}strip";
 
-				# shellHook = ''
-				# '';
+				shellHook = ''
+					zsh
+				'';
 
 
 				buildPhase = ''

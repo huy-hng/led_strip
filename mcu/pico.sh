@@ -18,11 +18,12 @@ done
 port="/dev/ttyACM0"
 project_path="/home/huy/repositories/led_strip/mcu"
 
-build_command="cmake -B ${project_path}/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -G Ninja"
+#-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+build_command="cmake -B ${project_path}/build -G Ninja"
 
 compile_command="ninja -C ${project_path}/build"
-upload_command="sudo picotool load -f ${project_path}/build/pico2w_minimal.uf2"
-monitor_command="sudo arduino-cli monitor -p /dev/ttyACM0 --config 115200;"
+upload_command="sudo picotool load -f ${project_path}/build/pico2w_led.uf2"
+monitor_command="sudo arduino-cli monitor -p /dev/ttyACM0 --config 115200"
 reboot_command="sudo picotool reboot -f"
 
 print_header() {

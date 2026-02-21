@@ -3,8 +3,8 @@ CompileFlags:
     - -stdlib=libstdc++
     - -isystem
     - /nix/store/zl327dqnvg3ynlpdhpphm1cppassbnq4-gcc-arm-embedded-14.3.rel1/arm-none-eabi/include/c++/14.3.1/arm-none-eabi
-  Remove: [-m*, -f*, -W*]
-  CompilationDatabase: .
+  CompilationDatabase: build
+  # Remove: [-m*, -f*, -W*]
 Index:
   Background: Build
   External:

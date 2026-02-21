@@ -1,6 +1,27 @@
-#include <pico/cyw43_arch.h>
-#include "../include/pins.h"
-#include "../include/util.h"
+#include "../include/includes.h"
+
+void printr(const char *format, ...) {
+	char new_text[200];
+
+	va_list args;
+	va_start(args, format);
+
+	vsnprintf(new_text, sizeof(new_text), format, args);
+	printf("%s                                     \r", new_text);
+
+	va_end(args);
+}
+void println(const char *format, ...) {
+	char new_text[200];
+
+	va_list args;
+	va_start(args, format);
+
+	vsnprintf(new_text, sizeof(new_text), format, args);
+	printf("%s\n", new_text);
+
+	va_end(args);
+}
 
 uint64_t micros() {
 	return time_us_64();
@@ -23,15 +44,13 @@ void blink(uint32_t duration) {
 	sleep_ms(duration);
 }
 
-int mean(int amount, volatile uint16_t *arr) {
+int mean(int amount, uint16_t *arr) {
 	float avg = 0;
 	for (int i = 0; i < amount; i++) {
 		avg += arr[i];
 	}
 	return avg / amount;
 }
-
-
 
 
 // repeating timer

@@ -6,8 +6,8 @@
 
 const char bar[9][4] = {" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"};
 
-const int16_t volume_offset = -20;
-const uint16_t max_bars = 128;
+const int16_t volume_offset = -30;
+const uint16_t max_bars = 64;
 const uint16_t bar_volume = 4096 / max_bars;
 const uint8_t empty_lines = 35;
 const uint8_t wstr_size = sizeof(bar[0]);
@@ -78,7 +78,7 @@ void wrap_in_box(char *output, char *input) {
 void print_volume(uint16_t volume) {
 	static uint16_t prev_vol = 0;
 
-	if (abs(prev_vol - volume) <= 0)
+	if (abs(prev_vol - volume) <= 1)
 		return;
 
 	prev_vol = volume;

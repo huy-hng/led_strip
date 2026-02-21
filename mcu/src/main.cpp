@@ -44,9 +44,9 @@ void loop() {
 
 int main() {
 	init();
-	// fft_loop();
 
 	multicore_launch_core1(fft_loop);
+
 	while (true) {
 		tight_loop_contents();
 		// loop();

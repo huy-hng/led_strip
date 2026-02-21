@@ -43,12 +43,12 @@ target_compile_options(pico2w_led PRIVATE
     # -fshort-wchar
 )
 
-# this goes together
+# ==== this goes together
 # add_subdirectory(lib/CMSIS-DSP)
 # target_include_directories(CMSISDSP PUBLIC
 # 	${PICO_SDK_PATH}/src/rp2_common/cmsis/stub/CMSIS/Core/Include
 # )
-# end this goes together
+# ==== end this goes together
 
 
 set(DSP ${CMAKE_CURRENT_LIST_DIR}/lib/CMSIS-DSP)
@@ -64,7 +64,6 @@ add_library(CMSISDSP STATIC
 	${DSP_SOURCE}/TransformFunctions/arm_cfft_f32.c
 	${DSP_SOURCE}/TransformFunctions/arm_cfft_init_f32.c
 )
-
 target_include_directories(CMSISDSP PUBLIC
 	${DSP}/Include
 	${DSP}/PrivateInclude
@@ -72,6 +71,7 @@ target_include_directories(CMSISDSP PUBLIC
 )
 
 target_compile_definitions(CMSISDSP PUBLIC
+	# ARM_MATH_M33
     ARM_MATH_CM33
     ARM_MATH_DSP
 	DISABLEFLOAT64 # since pico2w has single precision FPU only

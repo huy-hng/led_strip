@@ -23,7 +23,7 @@ extern volatile uint8_t read_index;
 
 void init_dma();
 
-// template <typename T>
-// extern void fetch_frame_via_ptrs(T buffer, uint8_t frame_id);
+extern void fetch_frame_via_ptrs(float *buffer, uint8_t frame_id);
+extern void fetch_frame_via_ptrs(uint16_t *buffer, uint8_t frame_id);
 
 extern int dma_chan;

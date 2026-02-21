@@ -7,7 +7,27 @@ volatile uint8_t read_index = 0;
 
 fft_frame_ptrs_t frame_ptrs[NUM_FRAMES];
 
-void setup_frame_ptrs(uint8_t frame_id, uint32_t start_idx) {
+template <typename T>
+void fetch_frame_via_ptrs(T *buffer, uint8_t frame_id) {
+	fft_frame_ptrs_t *frame = &frame_ptrs[frame_id];
+	uint32_t pos = 0;
+
+	for (uint32_t c = 0; c < frame->num_chunks; c++) {
+		for (uint32_t i = 0; i < frame->lengths[c]; i++) {
+			buffer[pos++] = (T)frame->chunks[c][i];
+		}
+	}
+}
+
+void fetch_frame_via_ptrs(float *buffer, uint8_t frame_id) {
+	fetch_frame_via_ptrs<float>(buffer, frame_id);
+}
+
+void fetch_frame_via_ptrs(uint16_t *buffer, uint8_t frame_id) {
+	fetch_frame_via_ptrs<uint16_t>(buffer, frame_id);
+}
+
+void set_frame_ptrs(uint8_t frame_id, uint32_t start_idx) {
 	fft_frame_ptrs_t *frame = &frame_ptrs[frame_id];
 
 	if (start_idx + FFT_WINDOW_SIZE <= ADC_BUF_LEN) {
@@ -40,14 +60,14 @@ void dma_irq_handler() {
 
 	uint8_t next_write_index = (write_index + 1) % NUM_FRAMES;
 	if (next_write_index == read_index) {
-		println("\n\ndsp lagging, dropping frame.\n\n\n\n");
+		println("--------dsp lagging, dropping frame--------");
 		return; // DSP lagging → drop frame
 	}
 
 	uint32_t new_start = (frame_ptrs[(next_write_index + NUM_FRAMES - 1) % NUM_FRAMES].chunks[0] - adc_buffer) + FFT_HOP_SIZE;
 	new_start %= ADC_BUF_LEN;
 
-	setup_frame_ptrs(next_write_index, new_start);
+	set_frame_ptrs(next_write_index, new_start);
 
 	write_index = next_write_index;
 	multicore_fifo_push_blocking(next_write_index);
@@ -76,7 +96,4 @@ void init_dma() {
 	dma_channel_set_irq0_enabled(dma_chan, true);
 	irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_handler);
 	irq_set_enabled(DMA_IRQ_0, true);
-
-	// Manually call the handler once, to trigger the first transfer
-	// dma_irq_handler();
 }

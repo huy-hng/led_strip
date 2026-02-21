@@ -7,10 +7,12 @@ void init_adc() {
 	// adc_select_input(0);
 
 	adc_fifo_setup(true,   // Write each completed conversion to FIFO
-				   true,   // Enable DMA request (DREQ)
+				   true,   // Enable DMA request (DREQ) when FIFO contains data
 				   1,	   // DREQ when at least 1 sample present
-				   false,  // No error bit
+				   false,  // If enabled, bit 15 of the FIFO contains error flag for each sample
 				   false); // No byte shift (keep 12-bit)
+						   // Shift FIFO contents to be one byte in size (for byte DMA) - enables
+						   // DMA to byte buffers.
 
 	// switch between ADC0 and ADC1 to get left and right audio channels
 	// every bit corresponds to a channel -> right most bit = 1 means that channel will be sampled

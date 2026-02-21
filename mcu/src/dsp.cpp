@@ -8,8 +8,6 @@ float fft_input[FFT_WINDOW_SIZE];
 float fft_output[FFT_WINDOW_SIZE];
 float magnitude_buffer[FFT_WINDOW_SIZE];
 
-
-
 float window[FFT_WINDOW_SIZE];
 arm_rfft_fast_instance_f32 fft_instance;
 
@@ -27,9 +25,21 @@ void apply_window(float *data) {
 }
 
 void fft() {
-	apply_window(fft_input);
-	arm_rfft_fast_f32(&fft_instance, fft_input, fft_input, 0);
-	arm_cmplx_mag_f32(fft_input, magnitude_buffer, FFT_WINDOW_SIZE / 2);
+	// apply_window(fft_input);
+
+	arm_rfft_fast_f32(&fft_instance, fft_input, fft_output, 0);
+
+	// calculate the magnitude at each bin
+	arm_cmplx_mag_f32(fft_output, magnitude_buffer, FFT_WINDOW_SIZE);
+
+	// for (int i = 0; i < 40; i++) {
+	// 	float val = fft_output[i];
+	// 	// float val = magnitude_buffer[i];
+	// 	if (val > 0)
+	// 		printf("%d %4.0f ", i, val);
+	// }
+	// printf("                                                                       \r");
+
 }
 
 template <typename T>
@@ -47,23 +57,20 @@ void fetch_frame_via_ptrs(T *buffer, uint8_t frame_id) {
 uint16_t adc_view[FFT_WINDOW_SIZE];
 static uint64_t start_time = 0;
 uint8_t current_index = 0;
+uint8_t last_index = 0;
 
 void fft_loop() {
 	static uint64_t start_time = 0;
 	while (true) {
-
-		println("fft loop time: %llu", millis() - start_time);
-		start_time = millis();
-
 		uint8_t current_index = multicore_fifo_pop_blocking();
-		fetch_frame_via_ptrs(fft_input, current_index);
-		fft();
 
-		// current_index = write_index;
-		// fetch_frame_via_ptrs(adc_view, current_index);
-		// int vol = mean(ADC_BUF_LEN, adc_view);
-		// print_volume(vol);
-		// sleep_ms(10);
+		// fetch_frame_via_ptrs(fft_input, current_index);
+		// fft();
+
+		fetch_frame_via_ptrs(adc_view, current_index);
+		int vol = mean(FFT_WINDOW_SIZE, adc_view);
+		// printr("%4d", vol);
+		print_volume(vol);
 
 		read_index = current_index;
 	}

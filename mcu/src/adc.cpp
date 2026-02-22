@@ -26,3 +26,7 @@ void init_adc() {
 	adc_run(false);
 	adc_fifo_drain();
 }
+
+void apply_dc_offset(int16_t *arr, uint16_t size, uint16_t offset) {
+	apply_dc_offset<int16_t>(arr, size, offset);
+}

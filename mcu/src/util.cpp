@@ -44,31 +44,13 @@ void blink(uint32_t duration) {
 	sleep_ms(duration);
 }
 
-template <typename T>
-T mean(int amount, T *arr) {
-	float avg = 0;
-	for (int i = 0; i < amount; i++) {
-		avg += arr[i];
-	}
-	return avg / amount;
-}
-
-float mean(int amount, float *arr) {
-	return mean<float>(amount, arr);
-}
-
-uint16_t mean(int amount, uint16_t *arr) {
-	return mean<uint16_t>(amount, arr);
-}
-
-volatile uint16_t mean(int amount, volatile uint16_t *arr) {
-	return mean<volatile uint16_t>(amount, arr);
-}
-
 void generate_sine(float *arr) {
 	for (int i = 0; i < FFT_SIZE; i++)
 		arr[i] = sinf(2.0f * M_PI * 21.0f * i / FFT_SIZE);
 }
+
+float freq_to_bin_num(float freq) { return (freq / SAMPLE_RATE) * FFT_SIZE; }
+float bin_num_to_freq(float bin) { return (bin / FFT_SIZE) * SAMPLE_RATE; }
 
 // repeating timer
 // struct repeating_timer timer;

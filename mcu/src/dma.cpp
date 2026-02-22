@@ -7,18 +7,6 @@ volatile uint8_t read_index = 0;
 
 fft_frame_ptrs_t frame_ptrs[NUM_FRAMES];
 
-template <typename T>
-void fetch_frame_via_ptrs(T *buffer, uint8_t frame_id) {
-	fft_frame_ptrs_t *frame = &frame_ptrs[frame_id];
-	uint32_t pos = 0;
-
-	for (uint32_t c = 0; c < frame->num_chunks; c++) {
-		for (uint32_t i = 0; i < frame->lengths[c]; i++) {
-			buffer[pos++] = (T)frame->chunks[c][i];
-		}
-	}
-}
-
 void fetch_frame_via_ptrs(float *buffer, uint8_t frame_id) {
 	fetch_frame_via_ptrs<float>(buffer, frame_id);
 }

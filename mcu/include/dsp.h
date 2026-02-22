@@ -1,20 +1,20 @@
 #pragma once
+#include <dsp/transform_functions.h>
+#include "../include/includes.h"
+
+struct Bin {
+	int index;
+	float magnitude;
+	// float freqency;
+};
 
 void init_dsp();
-void fft_loop();
-void fft_clean();
+void fft();
+void sort_bins_by_magnitude(Bin *bins);
+void sort_bins_by_index(Bin *bins, uint16_t start, uint16_t end);
+void normalize_magnitudes(uint16_t size);
 
+extern float fft_input[FFT_SIZE];
+extern float fft_output[FFT_SIZE];
+extern float magnitude_buffer[FFT_SIZE / 2+1];
 
-// #include "arm_math.h"
-// #include <math.h>
-// #include <stdint.h>
-
-// #define FFT_SIZE 1024
-
-// extern arm_rfft_fast_instance_f32 fft_instance;
-// extern float fft_input[FFT_SIZE];
-// extern float fft_output[FFT_SIZE];
-
-// void dsp_init();
-// void run_fft();
-// void test_sine();

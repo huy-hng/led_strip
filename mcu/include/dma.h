@@ -23,7 +23,17 @@ extern volatile uint8_t read_index;
 
 void init_dma();
 
-extern void fetch_frame_via_ptrs(float *buffer, uint8_t frame_id);
-extern void fetch_frame_via_ptrs(uint16_t *buffer, uint8_t frame_id);
+template <typename T>
+void fetch_frame_via_ptrs(T *buffer, uint8_t frame_id) {
+	fft_frame_ptrs_t *frame = &frame_ptrs[frame_id];
+	uint32_t pos = 0;
+
+	for (uint32_t c = 0; c < frame->num_chunks; c++) {
+		for (uint32_t i = 0; i < frame->lengths[c]; i++) {
+			buffer[pos++] = (T)frame->chunks[c][i];
+		}
+	}
+}
+
 
 extern int dma_chan;

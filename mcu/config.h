@@ -5,5 +5,9 @@
 #define FFT_HOP_SIZE (FFT_WINDOW_SIZE / 4)
 
 // max sample rate is ~512kHz
-#define SAMPLE_RATE 48000
-// #define SAMPLE_RATE 32768
+// #define SAMPLE_RATE 45056 // lands 440Hz exactly in bin 10
+// #define SAMPLE_RATE 40960 // lands 440Hz exactly in bin 11
+#define SAMPLE_RATE 28160 // lands 440Hz exactly in bin 16
+// #define SAMPLE_RATE 22528 // lands 440Hz exactly in bin 20
+// #define SAMPLE_RATE 20480 // lands 440Hz exactly in bin 22 (half of bin 11)
+// #define SAMPLE_RATE 14080 // lands 440Hz exactly in bin 32 (half of bin 16)

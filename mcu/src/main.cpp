@@ -4,26 +4,14 @@
 #include "../include/visualizer.h"
 #include "../include/note_detection.h"
 #include "../include/dsp.h"
+#include <hardware/adc.h>
+#include <pico/time.h>
 
 void countdown() {
 	for (int i = 3; i > 0; i--) {
 		printf("Starting in %d...\n", i);
 		sleep_ms(1000);
 	}
-}
-
-void init() {
-	cyw43_arch_init();
-	stdio_init_all(); // Initialize UART/USB stdio
-
-	countdown(); // must be before the other inits and must be after stdio init
-
-	init_visualizer();
-	init_adc();
-	init_dma();
-	init_dsp();
-	init_notes();
-	adc_run(true);
 }
 
 void loop() {
@@ -34,7 +22,8 @@ void loop() {
 	sleep_ms(10);
 }
 
-const uint16_t view_size = (FFT_HOP_SIZE * 4);
+// const uint16_t view_size = (FFT_HOP_SIZE * 4);
+const uint16_t view_size = (FFT_SIZE);
 const uint16_t view_start = FFT_SIZE - view_size;
 int16_t adc_view[FFT_SIZE];
 
@@ -57,34 +46,66 @@ void core1_entry() {
 	static uint64_t start_time = 0;
 	uint8_t current_index = 0;
 
+	uint8_t step = 0;
+	bool side = true;
+
 	while (true) {
-		// printf("%llu\n", millis() - start_time);
-		// start_time = millis();
 		uint8_t current_index = multicore_fifo_pop_blocking();
 		fetch_frame_via_ptrs(fft_input, current_index);
 
 		// visualize_volume(current_index);
 		// read_index = current_index;
-		// continue;
 
-		fft();
-		normalize_magnitudes(0);
-		float *mags = compute_note_scores(magnitude_buffer);
-		print_notes(mags);
-
-		// normalize_magnitudes(200);
-		// normalized_bands();
-		// print_bands();
-		// visualize_fft_horizontal();
-		
-		// for (int i = 0; i < 55; i++) {
-		// 	printf("%5.2f ", magnitude_buffer[i]);
+		// for (int i = 128; i < FFT_SIZE; i += 128) {
+		// 	printf("%4.0f ", fft_input[i]);
 		// }
-		// println("");
+		// printf("\n");
+		// for (int i = 128; i < ADC_BUF_LEN; i += (ADC_BUF_LEN / 64)) {
+		// 	printf("%4d ", adc_buffer[i]);
+		// }
+		// printf("\n");
+		// printf("\n");
 
-		// sleep_ms(1);
+		// sleep_ms();
+
+		start_time = micros();
+
+		fft(fft_bass_input, magnitude_bass_buffer);
+		fft(fft_input, magnitude_buffer);
+
+		normalize_magnitudes(magnitude_bass_buffer);
+		normalize_magnitudes(magnitude_buffer);
+
+		// filter_peaks(magnitude_bass_buffer, NUM_BINS);
+		// filter_peaks(magnitude_buffer, NUM_BINS);
+
+		float notes[NUM_NOTES];
+		compute_note_scores(magnitude_bass_buffer, notes, 0, NUM_NOTES_LOW,
+							(SAMPLE_RATE / LOW_SAMPLING_RATE_FACTOR));
+		compute_note_scores(magnitude_buffer, notes, NUM_NOTES_LOW, NUM_NOTES, SAMPLE_RATE);
+
+		filter_peaks(notes, NUM_NOTES);
+
+		// printf("%llu", micros() - start_time);
+		print_notes(notes, NUM_NOTES);
+		printf("▕\n");
+
 		read_index = current_index;
 	}
+}
+
+void init() {
+	cyw43_arch_init();
+	stdio_init_all(); // Initialize UART/USB stdio
+
+	countdown(); // must be before the other inits and must be after stdio init
+
+	init_visualizer();
+	init_adc();
+	init_dma();
+	init_dsp();
+	init_notes();
+	adc_run(true);
 }
 
 int main() {

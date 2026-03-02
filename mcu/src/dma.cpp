@@ -1,4 +1,5 @@
 #include "../include/dma.h"
+#include "../include/dsp.h"
 
 int dma_chan;
 volatile uint16_t adc_buffer[ADC_BUF_LEN];
@@ -30,23 +31,40 @@ void set_frame_ptrs(uint8_t frame_id, uint32_t start_idx) {
 	}
 }
 
+void set_bass_frame() {
+	uint32_t pos = 0;
+	for (int i = 0; i < ADC_BUF_LEN; i += LOW_SAMPLING_RATE_FACTOR) {
+		fft_bass_input[pos++] = adc_buffer[i];
+	}
+}
+
+uint16_t last_val = 0;
 void dma_irq_handler() {
 	// Clear the interrupt request.
 	dma_hw->ints0 = 1u << dma_chan;
 
-	uint8_t next_write_index = (write_index + 1) % NUM_FRAMES;
-	if (next_write_index == read_index) {
-		println("--------dsp lagging, dropping frame--------");
+	write_index = (write_index + 1) % NUM_FRAMES;
+	if (write_index == read_index) {
+		// TODO: Test if a chunk is skipped, if the next one still contains the most recent samples
+		printf("--------dsp lagging, dropping frame--------\n");
 		return; // DSP lagging → drop frame
 	}
 
-	uint32_t new_start = (frame_ptrs[(next_write_index + NUM_FRAMES - 1) % NUM_FRAMES].chunks[0] - adc_buffer) + FFT_HOP_SIZE;
+	if (adc_buffer[0] != last_val) {
+		// if (write_index != 1)
+		// 	println("out of sync");
+		// println("syncing");
+		write_index = 1;
+		last_val = adc_buffer[0];
+	}
+
+	uint32_t new_start = (write_index - (FFT_SIZE / FFT_HOP_SIZE)) * FFT_HOP_SIZE;
 	new_start %= ADC_BUF_LEN;
 
-	set_frame_ptrs(next_write_index, new_start);
+	set_frame_ptrs(write_index, new_start);
+	set_bass_frame();
 
-	write_index = next_write_index;
-	multicore_fifo_push_blocking(next_write_index);
+	multicore_fifo_push_blocking(write_index);
 
 	// retrigger dma (so it doesn't stop)
 	dma_channel_set_read_addr(dma_chan, &adc_hw->fifo, true);

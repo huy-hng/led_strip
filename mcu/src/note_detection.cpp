@@ -5,10 +5,18 @@
 #include "../include/dsp.h"
 
 float note_freq[NUM_NOTES];
-static float note_score[NUM_NOTES];
 int note_radius[NUM_NOTES];
 
-float note_norm_factor[NUM_NOTES];
+void compute_note_radius(int i, float f);
+
+void init_notes() {
+	for (int i = 0; i < NUM_NOTES; i++) {
+		int midi = i + 21;
+		note_freq[i] = 440.0f * powf(2.0f, (midi - 69) / 12.0f);
+
+		compute_note_radius(i, note_freq[i]);
+	}
+}
 
 void compute_note_radius(int i, float f) {
 	float semitone = f * 0.05946f;
@@ -25,29 +33,21 @@ void compute_note_radius(int i, float f) {
 	note_radius[i] = r;
 }
 
-void init_notes() {
-	for (int i = 0; i < NUM_NOTES; i++) {
-		int midi = i + 21;
-		note_freq[i] = 440.0f * powf(2.0f, (midi - 69) / 12.0f);
-
-		compute_note_radius(i, note_freq[i]);
-	}
-}
-
-float *compute_note_scores(float *mag) {
-	for (int n = 0; n < NUM_NOTES; n++) {
+void compute_note_scores(float *mag, float *note_score, uint16_t start_note, uint16_t end_note, uint32_t sample_rate) {
+	int pos = 0;
+	for (int n = start_note; n < end_note; n++) {
 		float score = 0.0f;
 
 		for (int h = 1; h <= MAX_HARMONICS; h++) {
 			float f = note_freq[n] * h;
 
-			if (f > SAMPLE_RATE / 2.0f)
+			if (f > sample_rate / 2.0f)
 				break;
 
-			float bin_f = f * FFT_SIZE / SAMPLE_RATE;
+			float bin_f = f * FFT_SIZE / sample_rate;
 
 			int bin_radius = note_radius[n];
-			float sigma = SIGMA * bin_radius; // good default
+			float sigma = SIGMA * bin_radius;
 			for (int k = -bin_radius; k <= bin_radius; k++) {
 				int idx = (int)bin_f + k;
 				if (idx < 1 || idx >= NUM_BINS - 1)
@@ -61,30 +61,9 @@ float *compute_note_scores(float *mag) {
 				score += mag[idx] * weight * harmonic_weight;
 			}
 		}
+		// note_score[pos++] = score;
 		note_score[n] = score;
 		// printf("%.1f ", note_score[n]);
 	}
 	// println("");
-	return note_score;
-}
-
-void compute_note_scores_simple(float *mag) {
-	for (int n = 0; n < NUM_NOTES; n++) {
-		float score = 0.0f;
-
-		for (int h = 1; h <= MAX_HARMONICS; h++) {
-			float f = note_freq[n] * h;
-
-			if (f > SAMPLE_RATE / 2.0f)
-				break;
-
-			int bin = (int)(f * FFT_SIZE / SAMPLE_RATE);
-
-			float weight = 1.0f / h; // reduce harmonic influence
-
-			score += mag[bin] * weight;
-		}
-
-		note_score[n] = score;
-	}
 }

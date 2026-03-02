@@ -106,38 +106,37 @@ void visualize_fft_vertical() {
 	sleep_ms(10);
 }
 
+void print_notes(float *notes, uint16_t num_notes) {
+	// float magnitude_gain = clamp<float>(0, magnitude_buffer[0] * 8, 1);
+	// float contrast_threshold = magnitude_buffer[0];
 
-void print_notes(float *mags) {
-	float magnitude_gain = clamp<float>(0, magnitude_buffer[0] * 8, 1);
-	float contrast_threshold = magnitude_buffer[0];
-
-	char output[NUM_NOTES * 3 * wstr_size];
+	char output[num_notes * 3 * wstr_size];
 	output[0] = '\0';
-	for (int i = 0; i < NUM_NOTES; i++) {
+	for (int i = 0; i < num_notes; i++) {
 		// float mag = mags[i] / magnitude_gain;
 
-		float mag = mags[i];
-		if (mags[i] > contrast_threshold)
-			mag /= magnitude_gain;
-		else
-			mag *= magnitude_gain;
+		float note = notes[i];
+		// if (notes[i] > contrast_threshold)
+		// 	note /= magnitude_gain;
+		// else
+		// 	note *= magnitude_gain;
 
-		mag = mag > 1 ? 1 : mag;
-		mag = mag < 0 ? 0 : mag;
+		note = note > 1 ? 1 : note;
+		note = note < 0 ? 0 : note;
 
-		float half = (mag * 16.0f) / 2.0f;
+		float half = (note * 16.0f) / 2.0f;
 		strcat(output, hor_right[(int)std::ceil(half)]);
 		strcat(output, hor_left[(int)std::floor(half)]);
 	}
 	// printf("%4.2f ", magnitude_buffer[0]);
-	printf("%s\n", output);
+	printf("%s", output);
 }
 
 void print_spectrogram(float *mags) {
 	const float frequency_per_bin = (float)SAMPLE_RATE / FFT_SIZE;
 	const uint16_t num_freq = FREQ_MAX / frequency_per_bin;
 
-	normalize_magnitudes(num_freq);
+	normalize_magnitudes(magnitude_buffer, num_freq);
 	float magnitude_gain = clamp<float>(0, magnitude_buffer[0] * 6, 1);
 
 	char output[num_freq * 3 * wstr_size];

@@ -35,5 +35,4 @@ void fetch_frame_via_ptrs(T *buffer, uint8_t frame_id) {
 	}
 }
 
-
 extern int dma_chan;

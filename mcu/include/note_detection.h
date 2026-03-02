@@ -10,11 +10,6 @@
 
 #define NUM_NOTES 88
 
-#define MIN_BIN ((int)(FREQ_MIN * FFT_SIZE / SAMPLE_RATE))
-#define MAX_BIN ((int)(FREQ_MAX * FFT_SIZE / SAMPLE_RATE))
-
-#define NUM_BANDS 76
-
 void init_notes();
 void detect_dominant_note();
 float *compute_note_scores(float *mag);

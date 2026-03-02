@@ -106,29 +106,6 @@ void visualize_fft_vertical() {
 	sleep_ms(10);
 }
 
-void visualize_fft_horizontal() {
-	const float highest_freq = 4186.009;
-	const float frequency_per_bin = (float)SAMPLE_RATE / FFT_SIZE;
-	const uint16_t num_freq = FREQ_MAX / frequency_per_bin;
-
-	normalize_magnitudes(num_freq);
-	float magnitude_gain = clamp<float>(0, magnitude_buffer[0] * 6, 1);
-
-	char output[max_bars * 2 * num_freq * wstr_size + 100];
-	output[0] = '\0';
-	for (int i = 1; i <= num_freq; i += 2) {
-		float mag = magnitude_buffer[i] / magnitude_gain;
-		float mag1 = magnitude_buffer[i + 1] / magnitude_gain;
-		mag = (mag + mag1) / 2;
-
-		mag = mag > 1 ? 1 : mag;
-		mag = mag < 0 ? 0 : mag;
-		strcat(output, create_horizontal_bar(mag));
-		strcat(output, "\n");
-	}
-	printf("\e[H\e[2J");
-	printf("%s\n", output);
-}
 
 void print_notes(float *mags) {
 	float magnitude_gain = clamp<float>(0, magnitude_buffer[0] * 8, 1);
@@ -152,7 +129,7 @@ void print_notes(float *mags) {
 		strcat(output, hor_right[(int)std::ceil(half)]);
 		strcat(output, hor_left[(int)std::floor(half)]);
 	}
-	printf("%4.2f ", magnitude_buffer[0]);
+	// printf("%4.2f ", magnitude_buffer[0]);
 	printf("%s\n", output);
 }
 

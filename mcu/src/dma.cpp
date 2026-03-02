@@ -7,14 +7,6 @@ volatile uint8_t read_index = 0;
 
 fft_frame_ptrs_t frame_ptrs[NUM_FRAMES];
 
-void fetch_frame_via_ptrs(float *buffer, uint8_t frame_id) {
-	fetch_frame_via_ptrs<float>(buffer, frame_id);
-}
-
-void fetch_frame_via_ptrs(uint16_t *buffer, uint8_t frame_id) {
-	fetch_frame_via_ptrs<uint16_t>(buffer, frame_id);
-}
-
 void set_frame_ptrs(uint8_t frame_id, uint32_t start_idx) {
 	fft_frame_ptrs_t *frame = &frame_ptrs[frame_id];
 
@@ -38,13 +30,9 @@ void set_frame_ptrs(uint8_t frame_id, uint32_t start_idx) {
 	}
 }
 
-uint64_t dma_time = 0;
 void dma_irq_handler() {
 	// Clear the interrupt request.
 	dma_hw->ints0 = 1u << dma_chan;
-
-	// println("dma time: %llu", millis() - dma_time);
-	// dma_time = millis();
 
 	uint8_t next_write_index = (write_index + 1) % NUM_FRAMES;
 	if (next_write_index == read_index) {

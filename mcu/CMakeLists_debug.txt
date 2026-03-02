@@ -1,0 +1,58 @@
+cmake_minimum_required(VERSION 3.13)
+
+set(PICO_BOARD pico2_w)
+set(PICO_PLATFORM rp2350-arm-s)
+
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_COMPILER clang++)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
+
+project(pico2w_led C CXX ASM)
+
+pico_sdk_init()
+
+add_executable(pico2w_led
+	src/main.cpp
+	src/dma.cpp
+	src/util.cpp
+	src/visualizer.cpp
+	src/adc.cpp
+	src/dsp.cpp
+)
+
+if (PICO_CYW43_SUPPORTED)
+	target_link_libraries(pico2w_led pico_cyw43_arch_none)
+endif()
+
+target_compile_options(pico2w_led PRIVATE
+    -mcpu=cortex-m33
+    -mfpu=fpv5-sp-d16
+	-mfloat-abi=softfp
+	-O3
+)
+
+add_subdirectory(lib/CMSIS-DSP)
+target_include_directories(CMSISDSP PUBLIC
+	${PICO_SDK_PATH}/src/rp2_common/cmsis/stub/CMSIS/Core/Include
+)
+
+target_compile_definitions(CMSISDSP PUBLIC
+	ARM_MATH_M33
+    ARM_MATH_DSP
+	DISABLEFLOAT64 # since pico2w has single precision FPU only
+	__FPU_PRESENT=1
+	# __ARM_ACLE=200
+)
+
+target_link_libraries(pico2w_led
+	pico_stdlib
+	pico_multicore
+	hardware_adc
+    CMSISDSP
+)
+
+pico_enable_stdio_usb(pico2w_led 1)
+pico_enable_stdio_uart(pico2w_led 0)
+pico_add_extra_outputs(pico2w_led)

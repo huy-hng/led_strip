@@ -9,3 +9,5 @@ Index:
   Background: Build
   External:
     File: ./.cache/clangd/index
+Diagnostics:
+  Suppress: redefinition

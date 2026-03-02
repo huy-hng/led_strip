@@ -2,6 +2,7 @@
 #include "../include/dma.h"
 #include "../include/adc.h"
 #include "../include/visualizer.h"
+#include "../include/note_detection.h"
 #include "../include/dsp.h"
 
 void countdown() {
@@ -21,8 +22,8 @@ void init() {
 	init_adc();
 	init_dma();
 	init_dsp();
+	init_notes();
 	adc_run(true);
-
 }
 
 void loop() {
@@ -67,18 +68,21 @@ void core1_entry() {
 		// continue;
 
 		fft();
+		normalize_magnitudes(0);
+		float *mags = compute_note_scores(magnitude_buffer);
+		print_notes(mags);
 
-		print_spectrogram();
+		// normalize_magnitudes(200);
+		// normalized_bands();
+		// print_bands();
 		// visualize_fft_horizontal();
-
-		// sleep_ms(1);
 		
 		// for (int i = 0; i < 55; i++) {
 		// 	printf("%5.2f ", magnitude_buffer[i]);
 		// }
 		// println("");
 
-
+		// sleep_ms(1);
 		read_index = current_index;
 	}
 }

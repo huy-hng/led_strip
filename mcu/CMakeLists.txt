@@ -18,6 +18,7 @@ add_executable(pico2w_led
 	src/dma.cpp
 	src/util.cpp
 	src/visualizer.cpp
+	src/note_detection.cpp
 	src/adc.cpp
 	src/dsp.cpp
 )
@@ -57,6 +58,7 @@ add_library(CMSISDSP STATIC
 	${DSP_SOURCE}/CommonTables/arm_common_tables.c
 	${DSP_SOURCE}/CommonTables/arm_const_structs.c
 	${DSP_SOURCE}/ComplexMathFunctions/arm_cmplx_mag_f32.c
+	${DSP_SOURCE}/StatisticsFunctions/arm_max_f32.c
 	${DSP_SOURCE}/TransformFunctions/arm_bitreversal2.c
 	${DSP_SOURCE}/TransformFunctions/arm_rfft_fast_f32.c
 	${DSP_SOURCE}/TransformFunctions/arm_rfft_fast_init_f32.c
@@ -84,6 +86,7 @@ target_link_libraries(pico2w_led
 	pico_stdlib
 	pico_multicore
 	hardware_adc
+	hardware_pwm
     CMSISDSP
 )
 

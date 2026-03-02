@@ -18,15 +18,15 @@ void fetch_frame_via_ptrs(uint16_t *buffer, uint8_t frame_id) {
 void set_frame_ptrs(uint8_t frame_id, uint32_t start_idx) {
 	fft_frame_ptrs_t *frame = &frame_ptrs[frame_id];
 
-	if (start_idx + FFT_WINDOW_SIZE <= ADC_BUF_LEN) {
+	if (start_idx + FFT_SIZE <= ADC_BUF_LEN) {
 		// Contiguous
 		frame->chunks[0] = &adc_buffer[start_idx];
-		frame->lengths[0] = FFT_WINDOW_SIZE;
+		frame->lengths[0] = FFT_SIZE;
 		frame->num_chunks = 1;
 	} else {
 		// Wrap occurs
 		uint32_t first_len = ADC_BUF_LEN - start_idx;
-		uint32_t second_len = FFT_WINDOW_SIZE - first_len;
+		uint32_t second_len = FFT_SIZE - first_len;
 
 		frame->chunks[0] = &adc_buffer[start_idx];
 		frame->lengths[0] = first_len;

@@ -1,7 +1,7 @@
 #pragma once
 #include "../include/includes.h"
 
-#define ADC_BUF_LEN (FFT_WINDOW_SIZE * 2) // Must be power of two
+#define ADC_BUF_LEN (FFT_SIZE * 2) // Must be power of two
 #define ADC_BUF_BYTES (ADC_BUF_LEN * sizeof(uint16_t))
 #define NUM_FRAMES (ADC_BUF_LEN / FFT_HOP_SIZE)
 

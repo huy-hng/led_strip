@@ -1,5 +1,7 @@
 #include "../include/visualizer.h"
+#include "../include/note_detection.h"
 #include "../include/dsp.h"
+#include <cmath>
 #include <cstring>
 
 // █▓▒░ transparency
@@ -105,16 +107,22 @@ void visualize_fft_vertical() {
 }
 
 void visualize_fft_horizontal() {
-	const float lowest_freq = 55;
 	const float highest_freq = 4186.009;
 	const float frequency_per_bin = (float)SAMPLE_RATE / FFT_SIZE;
-	const uint16_t height = highest_freq / frequency_per_bin;
+	const uint16_t num_freq = FREQ_MAX / frequency_per_bin;
 
-	char output[max_bars * 2 * height * wstr_size + 100];
+	normalize_magnitudes(num_freq);
+	float magnitude_gain = clamp<float>(0, magnitude_buffer[0] * 6, 1);
+
+	char output[max_bars * 2 * num_freq * wstr_size + 100];
 	output[0] = '\0';
+	for (int i = 1; i <= num_freq; i += 2) {
+		float mag = magnitude_buffer[i] / magnitude_gain;
+		float mag1 = magnitude_buffer[i + 1] / magnitude_gain;
+		mag = (mag + mag1) / 2;
 
-	for (int i = 0; i < 141; i += 2) {
-		float mag = (magnitude_buffer[i] + magnitude_buffer[i + 1]) / 2;
+		mag = mag > 1 ? 1 : mag;
+		mag = mag < 0 ? 0 : mag;
 		strcat(output, create_horizontal_bar(mag));
 		strcat(output, "\n");
 	}
@@ -122,27 +130,54 @@ void visualize_fft_horizontal() {
 	printf("%s\n", output);
 }
 
-void print_spectrogram() {
-	const float lowest_freq = 55;
-	const float highest_freq = 4186.009;
-	const float frequency_per_bin = (float)SAMPLE_RATE / FFT_SIZE;
-	const uint16_t num_freq = highest_freq / frequency_per_bin;
+void print_notes(float *mags) {
+	float magnitude_gain = clamp<float>(0, magnitude_buffer[0] * 8, 1);
+	float contrast_threshold = magnitude_buffer[0];
 
-	char output[num_freq * 3 * wstr_size];
+	char output[NUM_NOTES * 3 * wstr_size];
 	output[0] = '\0';
-	float magnitude_gain = clamp<float>(0, magnitude_buffer[0] * 6, 1);
+	for (int i = 0; i < NUM_NOTES; i++) {
+		// float mag = mags[i] / magnitude_gain;
 
-	normalize_magnitudes(num_freq);
+		float mag = mags[i];
+		if (mags[i] > contrast_threshold)
+			mag /= magnitude_gain;
+		else
+			mag *= magnitude_gain;
 
-	for (int i = 1; i <= num_freq; i++) {
-		float mag = magnitude_buffer[i] / magnitude_gain;
 		mag = mag > 1 ? 1 : mag;
 		mag = mag < 0 ? 0 : mag;
 
-		strcat(output, hor_right[(int)(mag * 8)]);
-		strcat(output, hor_left[(int)(mag * 8)]);
+		float half = (mag * 16.0f) / 2.0f;
+		strcat(output, hor_right[(int)std::ceil(half)]);
+		strcat(output, hor_left[(int)std::floor(half)]);
 	}
-	printf("%f", magnitude_gain);
+	printf("%4.2f ", magnitude_buffer[0]);
+	printf("%s\n", output);
+}
+
+void print_spectrogram(float *mags) {
+	const float frequency_per_bin = (float)SAMPLE_RATE / FFT_SIZE;
+	const uint16_t num_freq = FREQ_MAX / frequency_per_bin;
+
+	normalize_magnitudes(num_freq);
+	float magnitude_gain = clamp<float>(0, magnitude_buffer[0] * 6, 1);
+
+	char output[num_freq * 3 * wstr_size];
+	output[0] = '\0';
+	for (int i = 1; i <= num_freq; i++) {
+		float mag = mags[i] / magnitude_gain;
+		// float mag = mags[i];
+
+		// clamp<float>(0, mag, 1);
+		mag = mag > 1 ? 1 : mag;
+		mag = mag < 0 ? 0 : mag;
+
+		float half = (mag * 16.0f) / 2.0f;
+		strcat(output, hor_right[(int)std::ceil(half)]);
+		strcat(output, hor_left[(int)std::floor(half)]);
+	}
+	// printf("%f", magnitude_gain);
 	printf("%s\n", output);
 }
 

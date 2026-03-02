@@ -1,6 +1,8 @@
 #pragma once
 #include "../include/includes.h"
 
+#define EPSILON 1e-12f
+
 uint64_t micros();
 uint64_t millis();
 

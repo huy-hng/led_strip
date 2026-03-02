@@ -54,9 +54,7 @@ def create_band_map(sample_rate, window_size, band_centers):
     # --- compute band edges ---
     edges = np.zeros(len(band_centers) + 1)
 
-    edges[1:-1] = np.sqrt(
-        band_centers[:-1] * band_centers[1:]
-    )
+    edges[1:-1] = np.sqrt(band_centers[:-1] * band_centers[1:])
 
     # extrapolate first/last edge
     edges[0] = band_centers[0]**2 / edges[1]
